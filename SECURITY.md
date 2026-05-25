@@ -74,6 +74,9 @@ For the single-file build, `script-src` and `style-src` require
   with matching equipment.
 - Download suffixes are limited to safe filename characters.
 - Export log names are derived from sanitized output file names.
+- Browser object URLs for downloads are revoked after a short delay instead of
+  immediately, so canceled save dialogs can be retried without losing the
+  in-memory export.
 - Tags missing either `id` or `txt` are skipped instead of being partially
   rewritten.
 - Placeholder matching is case-insensitive and accepts `A`/`a` in either

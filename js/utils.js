@@ -1,6 +1,7 @@
 const MAX_INPUT_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = new Set(["etc", "xml", "txt"]);
 const LOG_MAX_LINES = 300;
+const DOWNLOAD_URL_REVOKE_DELAY_MS = 60000;
 const SAFE_SUFFIX_PATTERN = /^[A-Za-z0-9._-]{0,40}$/;
 const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\x00-\x1F]/g;
 
@@ -63,10 +64,13 @@ function downloadText(content, fileName) {
     const link = document.createElement("a");
     link.href = url;
     link.download = fileName;
+    link.style.display = "none";
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => {
+        if (link.parentNode) link.parentNode.removeChild(link);
+        URL.revokeObjectURL(url);
+    }, DOWNLOAD_URL_REVOKE_DELAY_MS);
 }
 
 function getLogElement() {
@@ -106,6 +110,7 @@ if (typeof module !== "undefined") {
     module.exports = {
         MAX_INPUT_FILE_SIZE_BYTES,
         SUPPORTED_EXTENSIONS,
+        DOWNLOAD_URL_REVOKE_DELAY_MS,
         getFileExtension,
         formatBytes,
         isSupportedFile,

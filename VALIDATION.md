@@ -33,6 +33,7 @@ python scripts/run_privacy_gate.py
 | Replacement limit | Range mode refuses quantities above the mobile safety limit. |
 | Output suffix safety | Download suffixes are limited to safe filename characters. |
 | Export log | Export logs include the timestamp, source file, output file, replacement count, machine label, and old/new `id`/`txt` values. |
+| Download retry safety | Browser download object URLs remain alive long enough for save dialog cancellation and retry. |
 | Privacy gate | Publishing checks reject private ETC-derived paths, unsafe runtime APIs, unsafe DOM HTML APIs, weak CSP, and non-English project text. |
 | Real template run | `templates/3-template-all-a.etc` is generated from `3.etc`, then processed through the JS engine and checked end-to-end. |
 | Local machine sample | When local `5.etc` exists, validation checks that machine diagram grouping finds multiple machines and grouped placeholders. |
