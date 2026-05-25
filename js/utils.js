@@ -1,7 +1,6 @@
 const MAX_INPUT_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = new Set(["etc", "xml", "txt"]);
 const LOG_MAX_LINES = 300;
-const DOWNLOAD_URL_REVOKE_DELAY_MS = 60000;
 const SAFE_SUFFIX_PATTERN = /^[A-Za-z0-9._-]{0,40}$/;
 const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\x00-\x1F]/g;
 
@@ -58,19 +57,9 @@ function sanitizeDownloadFileName(fileName) {
     return sanitized || "output.etc";
 }
 
-function downloadText(content, fileName) {
+function createTextDownloadUrl(content) {
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    link.style.display = "none";
-    document.body.appendChild(link);
-    link.click();
-    window.setTimeout(() => {
-        if (link.parentNode) link.parentNode.removeChild(link);
-        URL.revokeObjectURL(url);
-    }, DOWNLOAD_URL_REVOKE_DELAY_MS);
+    return URL.createObjectURL(blob);
 }
 
 function getLogElement() {
@@ -110,12 +99,12 @@ if (typeof module !== "undefined") {
     module.exports = {
         MAX_INPUT_FILE_SIZE_BYTES,
         SUPPORTED_EXTENSIONS,
-        DOWNLOAD_URL_REVOKE_DELAY_MS,
         getFileExtension,
         formatBytes,
         isSupportedFile,
         isSafeOutputSuffix,
         sanitizeDownloadFileName,
+        createTextDownloadUrl,
         makeDownloadName,
         makeExportLogName
     };

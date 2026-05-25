@@ -321,6 +321,41 @@ input[type="radio"] {
     background: linear-gradient(to bottom, rgba(255, 255, 255, 0.88), var(--surface) 36%);
 }
 
+.download-links-panel {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #d7e5df;
+    border-radius: 8px;
+    background: #f2faf6;
+}
+
+.download-links {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.download-link {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--primary-dark);
+    font-weight: 750;
+    text-align: center;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.download-link:focus-visible {
+    outline: 3px solid rgba(31, 122, 104, 0.24);
+    outline-offset: 2px;
+}
+
 button {
     width: 100%;
     min-height: 52px;
@@ -469,6 +504,10 @@ th {
 
     .action-row {
         grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .download-links {
+        grid-template-columns: 1fr 1fr;
     }
 }
 

@@ -4,6 +4,7 @@ let currentContent = "";
 let lastPlan = null;
 let lastAppliedPlan = null;
 let hasChanges = false;
+let activeDownloadUrls = [];
 const DEFAULT_NUMBER_STEP = "1";
 
 function byId(id) {
@@ -69,6 +70,49 @@ function renderFileSummary() {
 
 function renderRunSummary(text) {
     byId("runSummary").textContent = text;
+}
+
+function clearDownloadLinks() {
+    for (const url of activeDownloadUrls) {
+        URL.revokeObjectURL(url);
+    }
+    activeDownloadUrls = [];
+
+    const links = byId("downloadLinks");
+    if (links) links.textContent = "";
+
+    const panel = byId("downloadLinksPanel");
+    if (panel) panel.classList.add("hidden");
+}
+
+function renderDownloadLinks(items) {
+    clearDownloadLinks();
+    const panel = byId("downloadLinksPanel");
+    const links = byId("downloadLinks");
+    if (!panel || !links) return [];
+
+    const renderedLinks = [];
+    for (const item of items) {
+        const url = createTextDownloadUrl(item.content);
+        activeDownloadUrls.push(url);
+
+        const link = document.createElement("a");
+        link.className = "download-link";
+        link.href = url;
+        link.download = item.fileName;
+        link.textContent = item.label;
+        links.appendChild(link);
+        renderedLinks.push(link);
+    }
+
+    panel.classList.remove("hidden");
+    return renderedLinks;
+}
+
+function triggerDownloadLinks(links) {
+    for (const link of links) {
+        link.click();
+    }
 }
 
 function setReviewTab(activePanelId) {
@@ -198,6 +242,7 @@ async function handleFileSelect(event) {
     currentContent = "";
     originalContent = "";
     loadedFile = null;
+    clearDownloadLinks();
     byId("downloadBtn").disabled = true;
 
     if (!file) {
@@ -485,6 +530,7 @@ function applyChanges() {
     currentContent = result.content;
     lastAppliedPlan = result.plan;
     hasChanges = true;
+    clearDownloadLinks();
     byId("downloadBtn").disabled = false;
     refreshGroupedViews();
     renderRunSummary(`Done: ${result.count} replacements.`);
@@ -513,9 +559,13 @@ function downloadCurrentFile() {
         plan: lastAppliedPlan || lastPlan
     });
 
-    downloadText(currentContent, outputName);
-    downloadText(exportLog, exportLogName);
-    logOk(`File and export log downloads started: ${outputName}, ${exportLogName}`);
+    const links = renderDownloadLinks([
+        { label: `ETC file: ${outputName}`, fileName: outputName, content: currentContent },
+        { label: `Export log: ${exportLogName}`, fileName: exportLogName, content: exportLog }
+    ]);
+    triggerDownloadLinks(links);
+    logOk(`Download links ready: ${outputName}, ${exportLogName}`);
+    logWarn("If the browser cancels or blocks a save dialog, use the ETC file and Export log links.");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -532,8 +582,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     byId("numberStep").addEventListener("change", () => refreshGroupedViews({ forceFill: true }));
     byId("startNumber").addEventListener("change", () => refreshGroupedViews({ forceFill: true }));
+    byId("suffix").addEventListener("input", clearDownloadLinks);
     byId("useDbnoStart").addEventListener("change", updateModeUi);
     byId("useMachineRanges").addEventListener("change", updateModeUi);
+    window.addEventListener("pagehide", clearDownloadLinks);
     updateModeUi();
     renderMachineRanges();
     renderMachineDiagram();

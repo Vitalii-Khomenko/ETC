@@ -24,6 +24,21 @@ def run_ui_defaults_case() -> dict:
     return result
 
 
+def run_download_retry_ui_case() -> dict:
+    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    css = (ROOT / "css" / "style.css").read_text(encoding="utf-8")
+    utils = (ROOT / "js" / "utils.js").read_text(encoding="utf-8")
+    main_js = (ROOT / "js" / "main.js").read_text(encoding="utf-8")
+    return {
+        "panelExists": 'id="downloadLinksPanel"' in html and 'id="downloadLinks"' in html,
+        "linksAreStyled": ".download-links-panel" in css and ".download-link" in css,
+        "urlFactoryExists": "function createTextDownloadUrl" in utils,
+        "linkRendererExists": "function renderDownloadLinks" in main_js,
+        "downloadClickUsesVisibleLinks": "triggerDownloadLinks(links)" in main_js,
+        "doesNotClaimStarted": "downloads started" not in main_js.lower()
+    }
+
+
 def run_node_case() -> dict:
     script = r"""
 const fixer = require('./js/etc-fixer.js');
@@ -206,7 +221,6 @@ console.log(JSON.stringify({
   exportLogHasOutput: exportLog.includes('Output file: 3-template-all-a_fixed.etc'),
   exportLogHasCount: exportLog.includes('Count: 3'),
   exportLogHasOneSidedChange: exportLog.includes('2\t\t2\tA\t3313616\t55667789\t55667789'),
-  downloadRevokeDelaySafe: utils.DOWNLOAD_URL_REVOKE_DELAY_MS >= 30000,
   machineCount: machineSummaries.length,
   machineOneCandidates: machineOne.candidates,
   machineTwoCandidates: machineTwo.candidates,
@@ -441,6 +455,14 @@ def main() -> None:
     assert_true(ui_defaults["quantityHasNoDefaultValue"], "quantity input should be empty by default")
     assert_true(ui_defaults["startDbnoHasNoDefaultValue"], "start dbno input should be empty by default")
 
+    download_retry_ui = run_download_retry_ui_case()
+    assert_true(download_retry_ui["panelExists"], "download retry links panel should exist")
+    assert_true(download_retry_ui["linksAreStyled"], "download retry links should be styled")
+    assert_true(download_retry_ui["urlFactoryExists"], "download URLs should be created through a reusable helper")
+    assert_true(download_retry_ui["linkRendererExists"], "download retry links should be rendered after export")
+    assert_true(download_retry_ui["downloadClickUsesVisibleLinks"], "download action should click the rendered retry links")
+    assert_true(download_retry_ui["doesNotClaimStarted"], "download log should not claim that browser downloads definitely started")
+
     result = run_node_case()
     assert_true(result["singleCount"] == 1, "single mode should replace one tag")
     assert_true(result["singleHas6"], "single mode should update dbno 6")
@@ -470,7 +492,6 @@ def main() -> None:
     assert_true(result["exportLogHasOutput"], "export log should include the output file name")
     assert_true(result["exportLogHasCount"], "export log should include the replacement count")
     assert_true(result["exportLogHasOneSidedChange"], "export log should include old and new id/txt values")
-    assert_true(result["downloadRevokeDelaySafe"], "download blob URLs should stay alive long enough for save dialog retry")
     assert_true(result["machineCount"] == 2, "machine detection should find two BUILDING groups")
     assert_true(result["machineOneCandidates"] == 2, "first machine should have two replacement candidates")
     assert_true(result["machineTwoCandidates"] == 2, "second machine should have two replacement candidates")

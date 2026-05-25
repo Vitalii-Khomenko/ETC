@@ -91,8 +91,9 @@ which measurements belong to which machine before replacement.
    original file name plus the configured suffix, for example `3_fixed.etc`.
    The log uses the exported file name plus `_export-log.txt`, for example
    `3_fixed_export-log.txt`.
-   If a browser save dialog is canceled, press `Download + Log` again; the
-   current export stays in memory and the app creates fresh download links.
+   The app also keeps direct `ETC file` and `Export log` links on screen after
+   every export attempt. If a browser save dialog is canceled or blocked, press
+   those links or press `Download + Log` again to create fresh links.
 
 Each export log records the export timestamp, source file name, output file
 name, replacement settings, replacement count, machine label, warnings, and a

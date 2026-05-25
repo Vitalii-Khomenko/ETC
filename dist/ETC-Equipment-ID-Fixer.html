@@ -329,6 +329,41 @@ input[type="radio"] {
     background: linear-gradient(to bottom, rgba(255, 255, 255, 0.88), var(--surface) 36%);
 }
 
+.download-links-panel {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #d7e5df;
+    border-radius: 8px;
+    background: #f2faf6;
+}
+
+.download-links {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.download-link {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--primary-dark);
+    font-weight: 750;
+    text-align: center;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.download-link:focus-visible {
+    outline: 3px solid rgba(31, 122, 104, 0.24);
+    outline-offset: 2px;
+}
+
 button {
     width: 100%;
     min-height: 52px;
@@ -478,6 +513,10 @@ th {
     .action-row {
         grid-template-columns: 1fr 1fr 1fr;
     }
+
+    .download-links {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 @media (max-width: 420px) {
@@ -596,6 +635,9 @@ th {
                 <button id="applyBtn" type="button">Replace</button>
                 <button id="downloadBtn" type="button" disabled>Download + Log</button>
             </div>
+            <div id="downloadLinksPanel" class="download-links-panel hidden" aria-live="polite">
+                <div id="downloadLinks" class="download-links"></div>
+            </div>
         </section>
 
         <section class="card">
@@ -641,7 +683,6 @@ th {
 const MAX_INPUT_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = new Set(["etc", "xml", "txt"]);
 const LOG_MAX_LINES = 300;
-const DOWNLOAD_URL_REVOKE_DELAY_MS = 60000;
 const SAFE_SUFFIX_PATTERN = /^[A-Za-z0-9._-]{0,40}$/;
 const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\x00-\x1F]/g;
 
@@ -698,19 +739,9 @@ function sanitizeDownloadFileName(fileName) {
     return sanitized || "output.etc";
 }
 
-function downloadText(content, fileName) {
+function createTextDownloadUrl(content) {
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    link.style.display = "none";
-    document.body.appendChild(link);
-    link.click();
-    window.setTimeout(() => {
-        if (link.parentNode) link.parentNode.removeChild(link);
-        URL.revokeObjectURL(url);
-    }, DOWNLOAD_URL_REVOKE_DELAY_MS);
+    return URL.createObjectURL(blob);
 }
 
 function getLogElement() {
@@ -750,12 +781,12 @@ if (typeof module !== "undefined") {
     module.exports = {
         MAX_INPUT_FILE_SIZE_BYTES,
         SUPPORTED_EXTENSIONS,
-        DOWNLOAD_URL_REVOKE_DELAY_MS,
         getFileExtension,
         formatBytes,
         isSupportedFile,
         isSafeOutputSuffix,
         sanitizeDownloadFileName,
+        createTextDownloadUrl,
         makeDownloadName,
         makeExportLogName
     };
@@ -1420,6 +1451,7 @@ let currentContent = "";
 let lastPlan = null;
 let lastAppliedPlan = null;
 let hasChanges = false;
+let activeDownloadUrls = [];
 const DEFAULT_NUMBER_STEP = "1";
 
 function byId(id) {
@@ -1485,6 +1517,49 @@ function renderFileSummary() {
 
 function renderRunSummary(text) {
     byId("runSummary").textContent = text;
+}
+
+function clearDownloadLinks() {
+    for (const url of activeDownloadUrls) {
+        URL.revokeObjectURL(url);
+    }
+    activeDownloadUrls = [];
+
+    const links = byId("downloadLinks");
+    if (links) links.textContent = "";
+
+    const panel = byId("downloadLinksPanel");
+    if (panel) panel.classList.add("hidden");
+}
+
+function renderDownloadLinks(items) {
+    clearDownloadLinks();
+    const panel = byId("downloadLinksPanel");
+    const links = byId("downloadLinks");
+    if (!panel || !links) return [];
+
+    const renderedLinks = [];
+    for (const item of items) {
+        const url = createTextDownloadUrl(item.content);
+        activeDownloadUrls.push(url);
+
+        const link = document.createElement("a");
+        link.className = "download-link";
+        link.href = url;
+        link.download = item.fileName;
+        link.textContent = item.label;
+        links.appendChild(link);
+        renderedLinks.push(link);
+    }
+
+    panel.classList.remove("hidden");
+    return renderedLinks;
+}
+
+function triggerDownloadLinks(links) {
+    for (const link of links) {
+        link.click();
+    }
 }
 
 function setReviewTab(activePanelId) {
@@ -1614,6 +1689,7 @@ async function handleFileSelect(event) {
     currentContent = "";
     originalContent = "";
     loadedFile = null;
+    clearDownloadLinks();
     byId("downloadBtn").disabled = true;
 
     if (!file) {
@@ -1901,6 +1977,7 @@ function applyChanges() {
     currentContent = result.content;
     lastAppliedPlan = result.plan;
     hasChanges = true;
+    clearDownloadLinks();
     byId("downloadBtn").disabled = false;
     refreshGroupedViews();
     renderRunSummary(`Done: ${result.count} replacements.`);
@@ -1929,9 +2006,13 @@ function downloadCurrentFile() {
         plan: lastAppliedPlan || lastPlan
     });
 
-    downloadText(currentContent, outputName);
-    downloadText(exportLog, exportLogName);
-    logOk(`File and export log downloads started: ${outputName}, ${exportLogName}`);
+    const links = renderDownloadLinks([
+        { label: `ETC file: ${outputName}`, fileName: outputName, content: currentContent },
+        { label: `Export log: ${exportLogName}`, fileName: exportLogName, content: exportLog }
+    ]);
+    triggerDownloadLinks(links);
+    logOk(`Download links ready: ${outputName}, ${exportLogName}`);
+    logWarn("If the browser cancels or blocks a save dialog, use the ETC file and Export log links.");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1948,8 +2029,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     byId("numberStep").addEventListener("change", () => refreshGroupedViews({ forceFill: true }));
     byId("startNumber").addEventListener("change", () => refreshGroupedViews({ forceFill: true }));
+    byId("suffix").addEventListener("input", clearDownloadLinks);
     byId("useDbnoStart").addEventListener("change", updateModeUi);
     byId("useMachineRanges").addEventListener("change", updateModeUi);
+    window.addEventListener("pagehide", clearDownloadLinks);
     updateModeUi();
     renderMachineRanges();
     renderMachineDiagram();
