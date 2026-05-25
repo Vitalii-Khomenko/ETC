@@ -4,6 +4,7 @@ let currentContent = "";
 let lastPlan = null;
 let lastAppliedPlan = null;
 let hasChanges = false;
+const DEFAULT_NUMBER_STEP = "1";
 
 function byId(id) {
     return document.getElementById(id);
@@ -240,7 +241,7 @@ function getMachineRangeSettings() {
         machineLabel: row.dataset.machineLabel,
         enabled: row.querySelector(".machine-enabled")?.checked === true,
         startNumber: row.querySelector(".machine-start")?.value || "",
-        numberStep: row.querySelector(".machine-step")?.value || ""
+        numberStep: row.querySelector(".machine-step")?.value || DEFAULT_NUMBER_STEP
     }));
 }
 
@@ -259,7 +260,7 @@ function getExistingMachineRangeValues() {
         values.set(row.dataset.machineKey, {
             enabled: row.querySelector(".machine-enabled")?.checked === true,
             startNumber: row.querySelector(".machine-start")?.value || "",
-            numberStep: row.querySelector(".machine-step")?.value || ""
+            numberStep: row.querySelector(".machine-step")?.value || DEFAULT_NUMBER_STEP
         });
     }
     return values;
@@ -291,7 +292,7 @@ function updateMachineRangeRows() {
     for (const row of Array.from(document.querySelectorAll("#machineBody tr[data-machine-key]"))) {
         const count = Number(row.dataset.candidateCount || "0");
         const start = row.querySelector(".machine-start")?.value || "";
-        const step = row.querySelector(".machine-step")?.value || "";
+        const step = row.querySelector(".machine-step")?.value || DEFAULT_NUMBER_STEP;
         const preview = row.querySelector(".machine-range-preview");
         if (preview) preview.textContent = computeRangePreview(start, count, step);
     }
@@ -339,7 +340,7 @@ function renderMachineRanges(options = {}) {
         const count = summary.candidates;
         const existing = existingValues.get(machine.key);
         const enabled = count > 0 && (options.forceFill === true || existing?.enabled !== false);
-        const step = existing ? existing.numberStep : byId("numberStep").value;
+        const step = existing ? existing.numberStep : byId("numberStep").value || DEFAULT_NUMBER_STEP;
         const startNumber = starts.get(machine.key) || "";
         const tr = document.createElement("tr");
         tr.dataset.machineKey = machine.key;

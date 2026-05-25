@@ -39,9 +39,8 @@ a machine group and assigns matching `ELECTRICALEQUIPMENT` tags to the currently
 open machine. Each machine row shows its detected `A`/`a` count and has its own
 start number and number step.
 
-Number entry fields are empty by default. The operator must enter the required
-start numbers, steps, quantity, and optional dbno filter before previewing or
-replacing.
+Start number, quantity, optional dbno filter, and machine start number fields
+are empty by default. Global and machine number step fields default to `1`.
 
 Machine example:
 
@@ -75,10 +74,12 @@ which measurements belong to which machine before replacement.
 2. Select the `.etc` file.
 3. The app counts `ELECTRICALEQUIPMENT` tags, `Messpunkt` tags, and `A`/`a`
    placeholders, then groups matching placeholders by `BUILDING` machine.
-4. Enter the global start number and number step, then press
+4. Enter the global start number and keep or adjust the default number step
+   `1`, then press
    `Fill From Start Number` when machine rows should be filled from those
    values. Leave it alone when each machine row will be filled manually.
-5. Adjust any machine row that needs its own start number or step.
+5. Enter each needed machine start number and adjust any machine step only when
+   it should differ from `1`.
 6. Disable `Use machine ranges` only when one global range should be used for
    the whole file.
 7. Enable `Use dbno start filter` only when the global run should start at a

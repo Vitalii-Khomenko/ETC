@@ -15,11 +15,13 @@ TEMPLATE_PATH = ROOT / "templates" / "3-template-all-a.etc"
 
 def run_ui_defaults_case() -> dict:
     html = (ROOT / "index.html").read_text(encoding="utf-8")
-    fields = ["startNumber", "numberStep", "quantity", "startDbno"]
-    return {
+    empty_fields = ["startNumber", "quantity", "startDbno"]
+    result = {
         f"{field}HasNoDefaultValue": re.search(rf'id="{field}"[^>]*\bvalue=', html) is None
-        for field in fields
+        for field in empty_fields
     }
+    result["numberStepDefaultIsOne"] = re.search(r'id="numberStep"[^>]*\bvalue="1"', html) is not None
+    return result
 
 
 def run_node_case() -> dict:
@@ -435,7 +437,7 @@ def assert_true(value: bool, message: str) -> None:
 def main() -> None:
     ui_defaults = run_ui_defaults_case()
     assert_true(ui_defaults["startNumberHasNoDefaultValue"], "start number input should be empty by default")
-    assert_true(ui_defaults["numberStepHasNoDefaultValue"], "number step input should be empty by default")
+    assert_true(ui_defaults["numberStepDefaultIsOne"], "number step input should default to 1")
     assert_true(ui_defaults["quantityHasNoDefaultValue"], "quantity input should be empty by default")
     assert_true(ui_defaults["startDbnoHasNoDefaultValue"], "start dbno input should be empty by default")
 

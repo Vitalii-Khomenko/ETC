@@ -24,7 +24,7 @@ python scripts/run_privacy_gate.py
 | Range replacement | A start number such as `55667788` increments by the configured number step for every accepted tag. |
 | First A default | Range mode starts from the first matching `A` unless the dbno start filter is explicitly enabled. |
 | Number step | A step of `2` produces values such as `55667788`, `55667790`, and `55667792`. |
-| Empty numeric defaults | Start number, number step, quantity, and start dbno inputs have no default numeric values. |
+| Numbering defaults | Start number, quantity, and start dbno inputs are empty; number step defaults to `1`. |
 | Quantity limit | Range mode stops after the requested quantity. |
 | Machine detection | `BUILDING` blocks are detected as machine groups and report their own matching `A`/`a` counts. |
 | Machine ranges | Enabled machines use independent start numbers and number steps while preserving file order inside each machine. |
