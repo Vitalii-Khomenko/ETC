@@ -294,3 +294,26 @@ validation, deterministic replacement behavior, and useful regression coverage.
 The current implementation is appropriate for its intended field workflow as
 long as private ETC-derived artifacts remain local and the validation suite is
 run before publishing changes.
+
+## Remediation Closure
+
+Closure date: 2026-05-25
+
+Audit follow-up is closed with the controls below:
+
+| Audit item | Closure |
+| --- | --- |
+| Inline CSP requirement for the single-file build | Accepted as an offline/mobile distribution tradeoff. The privacy gate now verifies that both builds keep `connect-src 'none'`, `object-src 'none'`, `base-uri 'none'`, and `form-action 'none'`. |
+| ETC-derived data can escape through human workflow | Closed with `scripts/run_privacy_gate.py`, `.gitignore`, publishing rules, and validation integration. The gate rejects tracked or staged private ETC-derived paths and checks known local sample outputs remain ignored. |
+| Lightweight ETC/XML parsing | Accepted as scoped behavior for the known ETC export style. Existing regression tests cover current parser assumptions; project rules require new tests before parser behavior expands. |
+| Browser UI automated coverage gap | Partially closed with static security/UI-adjacent checks in the privacy gate and engine coverage for machine diagram data. Full browser automation remains optional if the UI grows further. |
+| Local sample validation depends on ignored files | Accepted as a privacy tradeoff. Validation skips local sample checks when samples are absent, and the privacy gate verifies samples and generated outputs remain ignored when present. |
+
+Current required closure command:
+
+```bash
+python tests/run_validation.py
+```
+
+This command runs the regression suite, rebuilds the single-file distribution,
+and executes the publishing privacy gate.

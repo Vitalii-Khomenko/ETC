@@ -93,6 +93,17 @@ Before every GitHub commit or push:
 If private data is accidentally staged, unstage it before committing and update
 `.gitignore` when the file pattern should always remain local.
 
+Run the automated privacy gate before publishing:
+
+```bash
+python scripts/run_privacy_gate.py
+```
+
+The gate fails when private ETC-derived paths are tracked, staged, or visible as
+unignored files. It also checks tracked text for non-English project text,
+runtime sources for network/storage APIs, unsafe DOM HTML APIs, CSP hardening,
+and single-file build self-containment.
+
 ## Reporting Issues
 
 Do not attach private customer ETC data to public issues. Describe the problem

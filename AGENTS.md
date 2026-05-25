@@ -29,6 +29,7 @@ Do not add Russian or any other non-English text to project files.
 - Start from the first matching `A` by default; use dbno only when the explicit filter is enabled.
 - Update project documentation after each functional change.
 - Run `python tests/run_validation.py` after every functional update.
+- Keep `scripts/run_privacy_gate.py` passing before publishing changes.
 - After each completed task, commit and push the intended project changes to GitHub unless the user explicitly asks not to publish.
 - Before every commit or push, verify that private ETC-derived files, generated templates, generated outputs, and export logs are ignored or excluded from staging.
 - Keep comments and developer notes concise, accurate, and in English.

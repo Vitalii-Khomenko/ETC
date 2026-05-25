@@ -488,6 +488,7 @@ def main() -> None:
     html = output.read_text(encoding="utf-8")
     assert_true("<script src=" not in html, "single-file build should inline scripts")
     assert_true("<link rel=\"stylesheet\"" not in html, "single-file build should inline CSS")
+    subprocess.run([sys.executable, "scripts/run_privacy_gate.py"], cwd=ROOT, check=True)
     print("Validation passed")
 
 

@@ -10,6 +10,12 @@ Run validation with:
 python tests/run_validation.py
 ```
 
+Run the publishing privacy gate directly with:
+
+```bash
+python scripts/run_privacy_gate.py
+```
+
 ## Current Regression Cases
 
 | Case | Expected behavior |
@@ -27,6 +33,7 @@ python tests/run_validation.py
 | Replacement limit | Range mode refuses quantities above the mobile safety limit. |
 | Output suffix safety | Download suffixes are limited to safe filename characters. |
 | Export log | Export logs include the timestamp, source file, output file, replacement count, machine label, and old/new `id`/`txt` values. |
+| Privacy gate | Publishing checks reject private ETC-derived paths, unsafe runtime APIs, unsafe DOM HTML APIs, weak CSP, and non-English project text. |
 | Real template run | `templates/3-template-all-a.etc` is generated from `3.etc`, then processed through the JS engine and checked end-to-end. |
 | Local machine sample | When local `5.etc` exists, validation checks that machine diagram grouping finds multiple machines and grouped placeholders. |
 | Single-file build | `dist/ETC-Equipment-ID-Fixer.html` has inline CSS and JS and no external local references. |

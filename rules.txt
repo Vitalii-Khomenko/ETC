@@ -44,11 +44,13 @@ Project Development and Publishing Guidelines for ETC Equipment ID Fixer
    - Run validation tests after each functional update.
    - Keep commit messages descriptive and in English.
    - After each completed task, commit and push intended project changes to GitHub unless the user explicitly asks not to publish.
+   - Run `python scripts/run_privacy_gate.py` before publishing when possible.
    - Before every commit or push, inspect the staged file list and confirm private ETC-derived files remain ignored or unstaged.
    - Never commit real `.etc` exports, generated ETC templates, generated fixed ETC outputs, export logs, screenshots with customer data, or other customer-derived artifacts.
 
 ## 6. Quality Assurance
    - Run `python tests/run_validation.py` after functional changes.
+   - Keep `scripts/run_privacy_gate.py` integrated into the validation suite.
    - Add regression cases for every field bug that changes replacement logic.
    - Test both split and single-file builds after UI or logic changes.
 

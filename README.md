@@ -62,6 +62,7 @@ which measurements belong to which machine before replacement.
 - `index.html` - split version with external `css/` and `js/`.
 - `dist/ETC-Equipment-ID-Fixer.html` - single-file mobile build.
 - `js/etc-fixer.js` - search and replacement engine.
+- `scripts/run_privacy_gate.py` - publish-time privacy and static security gate.
 - `tests/run_validation.py` - regression validation for logic and build output.
 
 ## Workflow
@@ -100,8 +101,14 @@ default for safer measurement-point updates.
 python tests/run_validation.py
 ```
 
-The validation suite also generates `templates/3-template-all-a.etc` from the
-local `3.etc` sample, runs the replacement engine against that template, writes
+The validation suite also runs `scripts/run_privacy_gate.py`. The privacy gate
+checks that private ETC-derived files are not tracked or staged, local sample
+outputs remain ignored, project text stays English-only, runtime sources do not
+use network/storage APIs, unsafe DOM HTML APIs are absent, CSP still blocks
+network access, and the single-file build remains self-contained.
+
+Validation also generates `templates/3-template-all-a.etc` from the local
+`3.etc` sample, runs the replacement engine against that template, writes
 `tests/generated/3-template-all-a-fixed.etc`, and checks that all available
 Messpunkt placeholders are numbered correctly. This local real-file validation
 is skipped when `3.etc` is not present, because real ETC exports should not be
