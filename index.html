@@ -111,23 +111,35 @@
         </section>
 
         <section class="card">
-            <h2>Preview</h2>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>dbno</th>
-                            <th>machine</th>
-                            <th>id</th>
-                            <th>txt</th>
-                            <th>new</th>
-                            <th>status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="previewBody">
-                        <tr><td colspan="6">No data.</td></tr>
-                    </tbody>
-                </table>
+            <h2>3. Review</h2>
+            <div class="tabs" role="tablist" aria-label="Review views">
+                <button id="diagramTab" class="tab-button active" type="button" role="tab" aria-selected="true" aria-controls="diagramPanel">Machine Diagram</button>
+                <button id="previewTab" class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="previewPanel">Preview Table</button>
+            </div>
+
+            <div id="diagramPanel" class="tab-panel" role="tabpanel" aria-labelledby="diagramTab">
+                <div id="diagramSummary" class="summary-box" aria-live="polite">No file selected.</div>
+                <div id="machineDiagram" class="diagram-grid" aria-live="polite"></div>
+            </div>
+
+            <div id="previewPanel" class="tab-panel hidden" role="tabpanel" aria-labelledby="previewTab">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>dbno</th>
+                                <th>machine</th>
+                                <th>id</th>
+                                <th>txt</th>
+                                <th>new</th>
+                                <th>status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewBody">
+                            <tr><td colspan="6">No data.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 

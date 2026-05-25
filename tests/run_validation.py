@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ETC_PATH = ROOT / "3.etc"
+SOURCE_MACHINE_ETC_PATH = ROOT / "5.etc"
 TEMPLATE_PATH = ROOT / "templates" / "3-template-all-a.etc"
 
 
@@ -151,6 +152,11 @@ const machineRun = fixer.applyMachinePlan(machineText, {
     }
   ]
 });
+const diagram = fixer.getMachineDiagramData(machineText, {
+  onlyA: true,
+  onlyMesspunkt: true
+});
+const diagramMachineTwo = diagram.machines.find(group => group.machine.id === 'MA200');
 const exportLogName = utils.makeExportLogName('3-template-all-a.etc', '_fixed');
 const exportLog = fixer.buildExportLog({
   exportedAt: '2026-05-24T12:34:56.000Z',
@@ -195,7 +201,12 @@ console.log(JSON.stringify({
   machineOneSecond: machineRun.content.includes('dbno="2" id="1001" txt="1001"'),
   machineTwoFirst: machineRun.content.includes('dbno="3" id="2000" txt="2000"'),
   machineTwoSecond: machineRun.content.includes('dbno="4" id="2010" txt="2010"'),
-  machinePreviewHasMachine: machineRun.plan.rows.some(row => row.machine === 'MA200 | Machine Two | dbno 2' && row.newValue === '2010')
+  machinePreviewHasMachine: machineRun.plan.rows.some(row => row.machine === 'MA200 | Machine Two | dbno 2' && row.newValue === '2010'),
+  diagramMachineCount: diagram.totals.machines,
+  diagramShownEquipment: diagram.totals.shownEquipment,
+  diagramPlaceholderCount: diagram.totals.placeholders,
+  diagramCandidateCount: diagram.totals.candidates,
+  diagramShowsOneSidedValue: diagramMachineTwo.equipment.some(item => item.dbno === '4' && item.displayValue === 'A / 3313616' && item.isPlaceholder)
 }));
 """
     completed = subprocess.run(
@@ -248,6 +259,42 @@ console.log(JSON.stringify({
 """
     completed = subprocess.run(
         ["node", "-e", script, str(TEMPLATE_PATH)],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    return json.loads(completed.stdout)
+
+
+def run_machine_sample_case() -> dict:
+    if not SOURCE_MACHINE_ETC_PATH.exists():
+        return {"skipped": True}
+
+    script = r"""
+const fs = require('fs');
+const fixer = require('./js/etc-fixer.js');
+const samplePath = process.argv[1];
+const text = fs.readFileSync(samplePath, 'utf8');
+const data = fixer.getMachineDiagramData(text, {
+  onlyA: true,
+  onlyMesspunkt: true
+});
+const machinesWithPlaceholders = data.machines.filter(group =>
+  group.equipment.some(item => item.isPlaceholder)
+);
+console.log(JSON.stringify({
+  skipped: false,
+  machineCount: data.totals.machines,
+  shownEquipment: data.totals.shownEquipment,
+  placeholders: data.totals.placeholders,
+  candidates: data.totals.candidates,
+  machinesWithPlaceholders: machinesWithPlaceholders.length,
+  hasMachineIds: data.machines.some(group => String(group.machine.id || '').startsWith('MA'))
+}));
+"""
+    completed = subprocess.run(
+        ["node", "-e", script, str(SOURCE_MACHINE_ETC_PATH)],
         cwd=ROOT,
         check=True,
         text=True,
@@ -393,6 +440,11 @@ def main() -> None:
     assert_true(result["machineTwoFirst"], "second machine should start from its own range")
     assert_true(result["machineTwoSecond"], "second machine should use its own number step")
     assert_true(result["machinePreviewHasMachine"], "machine mode preview rows should include machine labels")
+    assert_true(result["diagramMachineCount"] == 2, "machine diagram should include machine groups")
+    assert_true(result["diagramShownEquipment"] == 4, "machine diagram should show filtered equipment")
+    assert_true(result["diagramPlaceholderCount"] == 4, "machine diagram should count placeholders")
+    assert_true(result["diagramCandidateCount"] == 4, "machine diagram should count replacement matches")
+    assert_true(result["diagramShowsOneSidedValue"], "machine diagram should display one-sided placeholder values")
 
     security = run_security_case()
     assert_true(security["badDbnoRejected"], "strict dbno parsing should reject mixed input")
@@ -418,6 +470,17 @@ def main() -> None:
         assert_true(template["firstUpdated"], "real template run should update dbno 6 to the start number")
         assert_true(template["lastUpdated"], "real template run should increment through dbno 58")
         assert_true(template["afterPlaceholders"] == 0, "real template run should remove all Messpunkt placeholders")
+
+    machine_sample = run_machine_sample_case()
+    if machine_sample.get("skipped"):
+        print("Skipped local 5.etc machine diagram validation because 5.etc is not present")
+    else:
+        assert_true(machine_sample["machineCount"] > 1, "local machine sample should contain multiple machines")
+        assert_true(machine_sample["shownEquipment"] > 0, "local machine sample should expose grouped equipment")
+        assert_true(machine_sample["placeholders"] > 0, "local machine sample should contain placeholders")
+        assert_true(machine_sample["candidates"] == machine_sample["placeholders"], "local machine sample candidates should match placeholders with default safety filters")
+        assert_true(machine_sample["machinesWithPlaceholders"] > 0, "local machine sample should group placeholders under machines")
+        assert_true(machine_sample["hasMachineIds"], "local machine sample should expose machine IDs")
 
     subprocess.run([sys.executable, "scripts/build_singlefile_dist.py"], cwd=ROOT, check=True)
     output = ROOT / "dist" / "ETC-Equipment-ID-Fixer.html"

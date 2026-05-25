@@ -26,6 +26,10 @@ names, output file names, machine labels, replacement settings, old `id`/`txt`
 values, and new `id`/`txt` values, so treat them like ETC-derived data and keep
 them local unless reviewed.
 
+The machine diagram is also rendered from the loaded ETC content and can expose
+machine IDs, machine names, `dbno` values, and equipment IDs on screen. Treat
+screenshots of the diagram like ETC-derived data.
+
 ## Supported Deployment
 
 The primary supported deployment is opening
@@ -74,6 +78,20 @@ For the single-file build, `script-src` and `style-src` require
   rewritten.
 - Placeholder matching is case-insensitive and accepts `A`/`a` in either
   `id` or `txt`; accepted tags still rewrite both attributes.
+
+## Publishing Safety
+
+Before every GitHub commit or push:
+
+- inspect the staged file list,
+- confirm real `.etc` files are ignored,
+- confirm generated templates, generated fixed ETC outputs, export logs, and
+  customer-data screenshots are not staged,
+- commit only project code, documentation, validation tests, license files, and
+  reviewed synthetic examples.
+
+If private data is accidentally staged, unstage it before committing and update
+`.gitignore` when the file pattern should always remain local.
 
 ## Reporting Issues
 

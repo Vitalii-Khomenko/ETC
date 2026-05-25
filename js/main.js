@@ -70,6 +70,16 @@ function renderRunSummary(text) {
     byId("runSummary").textContent = text;
 }
 
+function setReviewTab(activePanelId) {
+    const isDiagram = activePanelId === "diagramPanel";
+    byId("diagramPanel").classList.toggle("hidden", !isDiagram);
+    byId("previewPanel").classList.toggle("hidden", isDiagram);
+    byId("diagramTab").classList.toggle("active", isDiagram);
+    byId("previewTab").classList.toggle("active", !isDiagram);
+    byId("diagramTab").setAttribute("aria-selected", String(isDiagram));
+    byId("previewTab").setAttribute("aria-selected", String(!isDiagram));
+}
+
 function renderPreview(rows) {
     const body = byId("previewBody");
     body.textContent = "";
@@ -91,6 +101,90 @@ function renderPreview(rows) {
         td.textContent = `Showing 80 of ${rows.length}.`;
         tr.appendChild(td);
         body.appendChild(tr);
+    }
+}
+
+function renderMachineDiagram() {
+    const summaryEl = byId("diagramSummary");
+    const diagramEl = byId("machineDiagram");
+    diagramEl.textContent = "";
+
+    if (!currentContent || !loadedFile) {
+        summaryEl.textContent = "No file selected.";
+        const empty = document.createElement("div");
+        empty.className = "empty-machine";
+        empty.textContent = "No machine diagram data.";
+        diagramEl.appendChild(empty);
+        return;
+    }
+
+    const data = getMachineDiagramData(currentContent, {
+        onlyA: byId("onlyA").checked,
+        onlyMesspunkt: byId("onlyMesspunkt").checked
+    });
+    summaryEl.textContent = `Machines: ${data.totals.machines} | Shown equipment: ${data.totals.shownEquipment} | A/a placeholders: ${data.totals.placeholders} | Replacement matches: ${data.totals.candidates}`;
+
+    if (data.machines.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty-machine";
+        empty.textContent = "No BUILDING machines were found.";
+        diagramEl.appendChild(empty);
+        return;
+    }
+
+    for (const group of data.machines) {
+        const block = document.createElement("article");
+        block.className = "machine-block";
+
+        const header = document.createElement("div");
+        header.className = "machine-block-header";
+
+        const titleWrap = document.createElement("div");
+        const title = document.createElement("div");
+        title.className = "machine-title";
+        title.textContent = group.machine.id || "Unnamed BUILDING";
+        const meta = document.createElement("span");
+        meta.className = "machine-meta";
+        meta.textContent = [group.machine.txt && group.machine.txt !== group.machine.id ? group.machine.txt : "", group.machine.dbno ? `dbno ${group.machine.dbno}` : ""].filter(Boolean).join(" | ");
+        titleWrap.appendChild(title);
+        if (meta.textContent) titleWrap.appendChild(meta);
+
+        const counts = document.createElement("div");
+        counts.className = "machine-counts";
+        counts.textContent = `${group.equipment.length} shown | ${group.candidateCount} match`;
+
+        header.appendChild(titleWrap);
+        header.appendChild(counts);
+        block.appendChild(header);
+
+        if (group.equipment.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "empty-machine";
+            empty.textContent = "No equipment for the current filters.";
+            block.appendChild(empty);
+        } else {
+            const flow = document.createElement("div");
+            flow.className = "equipment-flow";
+            for (const equipment of group.equipment) {
+                const chip = document.createElement("span");
+                chip.className = "equipment-chip";
+                if (equipment.isPlaceholder) chip.classList.add("placeholder");
+                if (equipment.isCandidate) chip.classList.add("candidate");
+
+                const dbno = document.createElement("span");
+                dbno.className = "chip-dbno";
+                dbno.textContent = equipment.dbno ? `#${equipment.dbno}` : "#-";
+                const value = document.createElement("span");
+                value.textContent = equipment.displayValue;
+                chip.title = `dbno ${equipment.dbno || "-"} | ${equipment.type || "-"}`;
+                chip.appendChild(dbno);
+                chip.appendChild(value);
+                flow.appendChild(chip);
+            }
+            block.appendChild(flow);
+        }
+
+        diagramEl.appendChild(block);
     }
 }
 
@@ -128,6 +222,7 @@ async function handleFileSelect(event) {
         loadedFile = file;
         syncQuantityWithDetectedPlaceholders();
         renderMachineRanges();
+        renderMachineDiagram();
         renderFileSummary();
         renderRunSummary("File loaded.");
         logOk(`Loaded ${file.name}`);
@@ -318,6 +413,12 @@ function renderMachineRanges(options = {}) {
     updateMachineRangeRows();
 }
 
+function refreshGroupedViews(options = {}) {
+    renderMachineRanges(options);
+    renderMachineDiagram();
+    renderFileSummary();
+}
+
 function fillMachineRangesFromGlobal() {
     renderMachineRanges({ forceFill: true });
     logOk("Machine ranges filled from the global start number.");
@@ -385,6 +486,7 @@ function applyChanges() {
     lastAppliedPlan = result.plan;
     hasChanges = true;
     byId("downloadBtn").disabled = false;
+    refreshGroupedViews();
     renderRunSummary(`Done: ${result.count} replacements.`);
     logOk(`Replaced: ${result.count}`);
     result.plan.warnings.forEach(logWarn);
@@ -422,16 +524,19 @@ document.addEventListener("DOMContentLoaded", () => {
     byId("applyBtn").addEventListener("click", applyChanges);
     byId("downloadBtn").addEventListener("click", downloadCurrentFile);
     byId("fillMachineRangesBtn").addEventListener("click", fillMachineRangesFromGlobal);
-    byId("onlyA").addEventListener("change", renderMachineRanges);
+    byId("diagramTab").addEventListener("click", () => setReviewTab("diagramPanel"));
+    byId("previewTab").addEventListener("click", () => setReviewTab("previewPanel"));
+    byId("onlyA").addEventListener("change", refreshGroupedViews);
     byId("onlyMesspunkt").addEventListener("change", () => {
         syncQuantityWithDetectedPlaceholders();
-        renderMachineRanges();
+        refreshGroupedViews();
     });
-    byId("numberStep").addEventListener("change", () => renderMachineRanges({ forceFill: true }));
-    byId("startNumber").addEventListener("change", () => renderMachineRanges({ forceFill: true }));
+    byId("numberStep").addEventListener("change", () => refreshGroupedViews({ forceFill: true }));
+    byId("startNumber").addEventListener("change", () => refreshGroupedViews({ forceFill: true }));
     byId("useDbnoStart").addEventListener("change", updateModeUi);
     byId("useMachineRanges").addEventListener("change", updateModeUi);
     updateModeUi();
     renderMachineRanges();
+    renderMachineDiagram();
     renderFileSummary();
 });

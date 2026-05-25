@@ -23,6 +23,7 @@ Project Development and Publishing Guidelines for ETC Equipment ID Fixer
    - Detect `BUILDING` blocks as machine groups for machine range mode.
    - In machine range mode, number matching equipment independently per enabled machine.
    - Keep equipment outside a `BUILDING` under an explicit unassigned group.
+   - Keep the machine diagram grouped by `BUILDING` and synchronized with the current safety filters.
    - Auto-fill the range quantity from the detected `A`/`a` placeholder count when a file is loaded.
    - Preserve source file formatting outside the edited attributes.
    - Keep the placeholder safety default enabled: only tags where `id` or `txt` is `A`/`a` are changed.
@@ -42,6 +43,9 @@ Project Development and Publishing Guidelines for ETC Equipment ID Fixer
    - Publish essential project files, documentation, validation tests, and license files.
    - Run validation tests after each functional update.
    - Keep commit messages descriptive and in English.
+   - After each completed task, commit and push intended project changes to GitHub unless the user explicitly asks not to publish.
+   - Before every commit or push, inspect the staged file list and confirm private ETC-derived files remain ignored or unstaged.
+   - Never commit real `.etc` exports, generated ETC templates, generated fixed ETC outputs, export logs, screenshots with customer data, or other customer-derived artifacts.
 
 ## 6. Quality Assurance
    - Run `python tests/run_validation.py` after functional changes.

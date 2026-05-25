@@ -233,6 +233,63 @@ function getMachineSummaries(text, rawSettings = {}) {
     return Array.from(summaries.values());
 }
 
+function getEquipmentDisplayValue(attrs) {
+    const id = attrs.id || "";
+    const txt = attrs.txt || "";
+    if (id && txt && id === txt) return id;
+    if (id && txt) return `${id} / ${txt}`;
+    return id || txt || "-";
+}
+
+function getMachineDiagramData(text, rawSettings = {}) {
+    const onlyMesspunkt = rawSettings.onlyMesspunkt !== false;
+    const settings = {
+        mode: "batch",
+        useDbnoStart: false,
+        onlyA: rawSettings.onlyA !== false,
+        onlyMesspunkt
+    };
+    const scan = scanEquipment(text);
+    const groups = new Map(scan.machines.map(summary => [summary.machine.key, {
+        machine: summary.machine,
+        totalEquipment: summary.total,
+        messpunkt: summary.messpunkt,
+        placeholders: summary.placeholders,
+        candidateCount: 0,
+        equipment: []
+    }]));
+
+    for (const item of scan.items) {
+        if (onlyMesspunkt && item.attrs.type !== "Messpunkt") continue;
+        const group = groups.get(item.machine.key);
+        if (!group) continue;
+        const candidate = shouldConsiderTag(item.attrs, settings);
+        const isCandidate = candidate.ok;
+        const isPlaceholder = hasAPlaceholder(item.attrs);
+        if (isCandidate) group.candidateCount++;
+        group.equipment.push({
+            dbno: item.attrs.dbno || "",
+            id: item.attrs.id || "",
+            txt: item.attrs.txt || "",
+            type: item.attrs.type || "",
+            displayValue: getEquipmentDisplayValue(item.attrs),
+            isPlaceholder,
+            isCandidate
+        });
+    }
+
+    const machines = Array.from(groups.values());
+    return {
+        machines,
+        totals: {
+            machines: machines.length,
+            shownEquipment: machines.reduce((sum, group) => sum + group.equipment.length, 0),
+            candidates: machines.reduce((sum, group) => sum + group.candidateCount, 0),
+            placeholders: machines.reduce((sum, group) => sum + group.equipment.filter(item => item.isPlaceholder).length, 0)
+        }
+    };
+}
+
 function shouldConsiderTag(attrs, settings) {
     if (settings.onlyMesspunkt && attrs.type !== "Messpunkt") {
         return { ok: false, reason: "not Messpunkt" };
@@ -585,6 +642,7 @@ if (typeof module !== "undefined") {
         readSettings,
         getEquipmentStats,
         getMachineSummaries,
+        getMachineDiagramData,
         buildPlan,
         applyPlan,
         buildMachinePlan,

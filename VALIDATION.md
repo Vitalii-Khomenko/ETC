@@ -21,12 +21,14 @@ python tests/run_validation.py
 | Quantity limit | Range mode stops after the requested quantity. |
 | Machine detection | `BUILDING` blocks are detected as machine groups and report their own matching `A`/`a` counts. |
 | Machine ranges | Enabled machines use independent start numbers and number steps while preserving file order inside each machine. |
+| Machine diagram | The diagram data groups shown equipment by machine and displays one-sided placeholder values such as `A / 3313616`. |
 | Safety filter | Existing numeric IDs are not overwritten while `Only replace id/txt with A/a` is enabled and neither attribute is `A`/`a`. |
 | Strict input parsing | Mixed numeric text such as `6abc` is rejected instead of being treated as `6`. |
 | Replacement limit | Range mode refuses quantities above the mobile safety limit. |
 | Output suffix safety | Download suffixes are limited to safe filename characters. |
 | Export log | Export logs include the timestamp, source file, output file, replacement count, machine label, and old/new `id`/`txt` values. |
 | Real template run | `templates/3-template-all-a.etc` is generated from `3.etc`, then processed through the JS engine and checked end-to-end. |
+| Local machine sample | When local `5.etc` exists, validation checks that machine diagram grouping finds multiple machines and grouped placeholders. |
 | Single-file build | `dist/ETC-Equipment-ID-Fixer.html` has inline CSS and JS and no external local references. |
 
 ## Important Limitation

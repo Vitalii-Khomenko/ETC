@@ -216,6 +216,107 @@ input[type="radio"] {
     font-size: 0.9rem;
 }
 
+.tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.tab-button {
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    background: #f8faf9;
+    color: #45514d;
+    box-shadow: none;
+    font-size: 0.92rem;
+}
+
+.tab-button.active {
+    border-color: var(--primary);
+    background: #e8f5f1;
+    color: var(--primary-dark);
+}
+
+.diagram-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.machine-block {
+    border: 1px solid #dfe7e4;
+    border-radius: 8px;
+    background: #fbfcfb;
+    overflow: hidden;
+}
+
+.machine-block-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: start;
+    padding: 10px 12px;
+    border-bottom: 1px solid #edf0ef;
+    background: #f4f8f6;
+}
+
+.machine-title {
+    min-width: 0;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+}
+
+.machine-counts {
+    color: var(--muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.equipment-flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 12px 12px;
+}
+
+.equipment-chip {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 7px;
+    border: 1px solid #d7e1dd;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #33433e;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.78rem;
+    overflow-wrap: anywhere;
+}
+
+.equipment-chip.placeholder {
+    border-color: #d9aa42;
+    background: #fff7df;
+    color: #6f4b00;
+    font-weight: 700;
+}
+
+.equipment-chip.candidate {
+    box-shadow: inset 0 -2px 0 rgba(31, 122, 104, 0.28);
+}
+
+.chip-dbno {
+    color: var(--muted);
+    font-size: 0.72rem;
+}
+
+.empty-machine {
+    padding: 10px 12px 12px;
+    color: var(--muted);
+    font-size: 0.84rem;
+}
+
 .action-row {
     display: grid;
     grid-template-columns: 1fr;
@@ -260,6 +361,23 @@ button:disabled {
     cursor: not-allowed;
     opacity: 0.56;
     transform: none;
+}
+
+.tabs .tab-button,
+.tabs .tab-button:nth-child(2) {
+    min-height: 44px;
+    border: 1px solid var(--line);
+    background: #f8faf9;
+    color: #45514d;
+    box-shadow: none;
+    font-size: 0.92rem;
+}
+
+.tabs .tab-button.active,
+.tabs .tab-button.active:nth-child(2) {
+    border-color: var(--primary);
+    background: #e8f5f1;
+    color: var(--primary-dark);
 }
 
 .table-wrap {
@@ -481,23 +599,35 @@ th {
         </section>
 
         <section class="card">
-            <h2>Preview</h2>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>dbno</th>
-                            <th>machine</th>
-                            <th>id</th>
-                            <th>txt</th>
-                            <th>new</th>
-                            <th>status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="previewBody">
-                        <tr><td colspan="6">No data.</td></tr>
-                    </tbody>
-                </table>
+            <h2>3. Review</h2>
+            <div class="tabs" role="tablist" aria-label="Review views">
+                <button id="diagramTab" class="tab-button active" type="button" role="tab" aria-selected="true" aria-controls="diagramPanel">Machine Diagram</button>
+                <button id="previewTab" class="tab-button" type="button" role="tab" aria-selected="false" aria-controls="previewPanel">Preview Table</button>
+            </div>
+
+            <div id="diagramPanel" class="tab-panel" role="tabpanel" aria-labelledby="diagramTab">
+                <div id="diagramSummary" class="summary-box" aria-live="polite">No file selected.</div>
+                <div id="machineDiagram" class="diagram-grid" aria-live="polite"></div>
+            </div>
+
+            <div id="previewPanel" class="tab-panel hidden" role="tabpanel" aria-labelledby="previewTab">
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>dbno</th>
+                                <th>machine</th>
+                                <th>id</th>
+                                <th>txt</th>
+                                <th>new</th>
+                                <th>status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewBody">
+                            <tr><td colspan="6">No data.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -862,6 +992,63 @@ function getMachineSummaries(text, rawSettings = {}) {
     return Array.from(summaries.values());
 }
 
+function getEquipmentDisplayValue(attrs) {
+    const id = attrs.id || "";
+    const txt = attrs.txt || "";
+    if (id && txt && id === txt) return id;
+    if (id && txt) return `${id} / ${txt}`;
+    return id || txt || "-";
+}
+
+function getMachineDiagramData(text, rawSettings = {}) {
+    const onlyMesspunkt = rawSettings.onlyMesspunkt !== false;
+    const settings = {
+        mode: "batch",
+        useDbnoStart: false,
+        onlyA: rawSettings.onlyA !== false,
+        onlyMesspunkt
+    };
+    const scan = scanEquipment(text);
+    const groups = new Map(scan.machines.map(summary => [summary.machine.key, {
+        machine: summary.machine,
+        totalEquipment: summary.total,
+        messpunkt: summary.messpunkt,
+        placeholders: summary.placeholders,
+        candidateCount: 0,
+        equipment: []
+    }]));
+
+    for (const item of scan.items) {
+        if (onlyMesspunkt && item.attrs.type !== "Messpunkt") continue;
+        const group = groups.get(item.machine.key);
+        if (!group) continue;
+        const candidate = shouldConsiderTag(item.attrs, settings);
+        const isCandidate = candidate.ok;
+        const isPlaceholder = hasAPlaceholder(item.attrs);
+        if (isCandidate) group.candidateCount++;
+        group.equipment.push({
+            dbno: item.attrs.dbno || "",
+            id: item.attrs.id || "",
+            txt: item.attrs.txt || "",
+            type: item.attrs.type || "",
+            displayValue: getEquipmentDisplayValue(item.attrs),
+            isPlaceholder,
+            isCandidate
+        });
+    }
+
+    const machines = Array.from(groups.values());
+    return {
+        machines,
+        totals: {
+            machines: machines.length,
+            shownEquipment: machines.reduce((sum, group) => sum + group.equipment.length, 0),
+            candidates: machines.reduce((sum, group) => sum + group.candidateCount, 0),
+            placeholders: machines.reduce((sum, group) => sum + group.equipment.filter(item => item.isPlaceholder).length, 0)
+        }
+    };
+}
+
 function shouldConsiderTag(attrs, settings) {
     if (settings.onlyMesspunkt && attrs.type !== "Messpunkt") {
         return { ok: false, reason: "not Messpunkt" };
@@ -1214,6 +1401,7 @@ if (typeof module !== "undefined") {
         readSettings,
         getEquipmentStats,
         getMachineSummaries,
+        getMachineDiagramData,
         buildPlan,
         applyPlan,
         buildMachinePlan,
@@ -1295,6 +1483,16 @@ function renderRunSummary(text) {
     byId("runSummary").textContent = text;
 }
 
+function setReviewTab(activePanelId) {
+    const isDiagram = activePanelId === "diagramPanel";
+    byId("diagramPanel").classList.toggle("hidden", !isDiagram);
+    byId("previewPanel").classList.toggle("hidden", isDiagram);
+    byId("diagramTab").classList.toggle("active", isDiagram);
+    byId("previewTab").classList.toggle("active", !isDiagram);
+    byId("diagramTab").setAttribute("aria-selected", String(isDiagram));
+    byId("previewTab").setAttribute("aria-selected", String(!isDiagram));
+}
+
 function renderPreview(rows) {
     const body = byId("previewBody");
     body.textContent = "";
@@ -1316,6 +1514,90 @@ function renderPreview(rows) {
         td.textContent = `Showing 80 of ${rows.length}.`;
         tr.appendChild(td);
         body.appendChild(tr);
+    }
+}
+
+function renderMachineDiagram() {
+    const summaryEl = byId("diagramSummary");
+    const diagramEl = byId("machineDiagram");
+    diagramEl.textContent = "";
+
+    if (!currentContent || !loadedFile) {
+        summaryEl.textContent = "No file selected.";
+        const empty = document.createElement("div");
+        empty.className = "empty-machine";
+        empty.textContent = "No machine diagram data.";
+        diagramEl.appendChild(empty);
+        return;
+    }
+
+    const data = getMachineDiagramData(currentContent, {
+        onlyA: byId("onlyA").checked,
+        onlyMesspunkt: byId("onlyMesspunkt").checked
+    });
+    summaryEl.textContent = `Machines: ${data.totals.machines} | Shown equipment: ${data.totals.shownEquipment} | A/a placeholders: ${data.totals.placeholders} | Replacement matches: ${data.totals.candidates}`;
+
+    if (data.machines.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty-machine";
+        empty.textContent = "No BUILDING machines were found.";
+        diagramEl.appendChild(empty);
+        return;
+    }
+
+    for (const group of data.machines) {
+        const block = document.createElement("article");
+        block.className = "machine-block";
+
+        const header = document.createElement("div");
+        header.className = "machine-block-header";
+
+        const titleWrap = document.createElement("div");
+        const title = document.createElement("div");
+        title.className = "machine-title";
+        title.textContent = group.machine.id || "Unnamed BUILDING";
+        const meta = document.createElement("span");
+        meta.className = "machine-meta";
+        meta.textContent = [group.machine.txt && group.machine.txt !== group.machine.id ? group.machine.txt : "", group.machine.dbno ? `dbno ${group.machine.dbno}` : ""].filter(Boolean).join(" | ");
+        titleWrap.appendChild(title);
+        if (meta.textContent) titleWrap.appendChild(meta);
+
+        const counts = document.createElement("div");
+        counts.className = "machine-counts";
+        counts.textContent = `${group.equipment.length} shown | ${group.candidateCount} match`;
+
+        header.appendChild(titleWrap);
+        header.appendChild(counts);
+        block.appendChild(header);
+
+        if (group.equipment.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "empty-machine";
+            empty.textContent = "No equipment for the current filters.";
+            block.appendChild(empty);
+        } else {
+            const flow = document.createElement("div");
+            flow.className = "equipment-flow";
+            for (const equipment of group.equipment) {
+                const chip = document.createElement("span");
+                chip.className = "equipment-chip";
+                if (equipment.isPlaceholder) chip.classList.add("placeholder");
+                if (equipment.isCandidate) chip.classList.add("candidate");
+
+                const dbno = document.createElement("span");
+                dbno.className = "chip-dbno";
+                dbno.textContent = equipment.dbno ? `#${equipment.dbno}` : "#-";
+                const value = document.createElement("span");
+                value.textContent = equipment.displayValue;
+                chip.title = `dbno ${equipment.dbno || "-"} | ${equipment.type || "-"}`;
+                chip.appendChild(dbno);
+                chip.appendChild(value);
+                flow.appendChild(chip);
+            }
+            block.appendChild(flow);
+        }
+
+        diagramEl.appendChild(block);
     }
 }
 
@@ -1353,6 +1635,7 @@ async function handleFileSelect(event) {
         loadedFile = file;
         syncQuantityWithDetectedPlaceholders();
         renderMachineRanges();
+        renderMachineDiagram();
         renderFileSummary();
         renderRunSummary("File loaded.");
         logOk(`Loaded ${file.name}`);
@@ -1543,6 +1826,12 @@ function renderMachineRanges(options = {}) {
     updateMachineRangeRows();
 }
 
+function refreshGroupedViews(options = {}) {
+    renderMachineRanges(options);
+    renderMachineDiagram();
+    renderFileSummary();
+}
+
 function fillMachineRangesFromGlobal() {
     renderMachineRanges({ forceFill: true });
     logOk("Machine ranges filled from the global start number.");
@@ -1610,6 +1899,7 @@ function applyChanges() {
     lastAppliedPlan = result.plan;
     hasChanges = true;
     byId("downloadBtn").disabled = false;
+    refreshGroupedViews();
     renderRunSummary(`Done: ${result.count} replacements.`);
     logOk(`Replaced: ${result.count}`);
     result.plan.warnings.forEach(logWarn);
@@ -1647,17 +1937,20 @@ document.addEventListener("DOMContentLoaded", () => {
     byId("applyBtn").addEventListener("click", applyChanges);
     byId("downloadBtn").addEventListener("click", downloadCurrentFile);
     byId("fillMachineRangesBtn").addEventListener("click", fillMachineRangesFromGlobal);
-    byId("onlyA").addEventListener("change", renderMachineRanges);
+    byId("diagramTab").addEventListener("click", () => setReviewTab("diagramPanel"));
+    byId("previewTab").addEventListener("click", () => setReviewTab("previewPanel"));
+    byId("onlyA").addEventListener("change", refreshGroupedViews);
     byId("onlyMesspunkt").addEventListener("change", () => {
         syncQuantityWithDetectedPlaceholders();
-        renderMachineRanges();
+        refreshGroupedViews();
     });
-    byId("numberStep").addEventListener("change", () => renderMachineRanges({ forceFill: true }));
-    byId("startNumber").addEventListener("change", () => renderMachineRanges({ forceFill: true }));
+    byId("numberStep").addEventListener("change", () => refreshGroupedViews({ forceFill: true }));
+    byId("startNumber").addEventListener("change", () => refreshGroupedViews({ forceFill: true }));
     byId("useDbnoStart").addEventListener("change", updateModeUi);
     byId("useMachineRanges").addEventListener("change", updateModeUi);
     updateModeUi();
     renderMachineRanges();
+    renderMachineDiagram();
     renderFileSummary();
 });
     </script>

@@ -52,6 +52,11 @@ Machine example:
 With machine ranges enabled, that equipment is numbered by the range assigned
 to machine `MA25000944`.
 
+The `Machine Diagram` tab shows the same grouping visually. Each machine is a
+compact block, and each shown equipment item is a chip with its `dbno` and
+`id`/`txt` value. `A`/`a` placeholders are highlighted so the operator can see
+which measurements belong to which machine before replacement.
+
 ## Files
 
 - `index.html` - split version with external `css/` and `js/`.
@@ -72,8 +77,10 @@ to machine `MA25000944`.
    the whole file.
 7. Enable `Use dbno start filter` only when the global run should start at a
    specific `dbno` or later.
-8. Press `Preview`, then `Replace`.
-9. Download the new `.etc` file and export log. The ETC output name is the
+8. Open `Machine Diagram` to review machine-to-equipment grouping in a compact
+   visual layout.
+9. Press `Preview`, then `Replace`.
+10. Download the new `.etc` file and export log. The ETC output name is the
    original file name plus the configured suffix, for example `3_fixed.etc`.
    The log uses the exported file name plus `_export-log.txt`, for example
    `3_fixed_export-log.txt`.

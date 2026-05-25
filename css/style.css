@@ -208,6 +208,107 @@ input[type="radio"] {
     font-size: 0.9rem;
 }
 
+.tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.tab-button {
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    background: #f8faf9;
+    color: #45514d;
+    box-shadow: none;
+    font-size: 0.92rem;
+}
+
+.tab-button.active {
+    border-color: var(--primary);
+    background: #e8f5f1;
+    color: var(--primary-dark);
+}
+
+.diagram-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.machine-block {
+    border: 1px solid #dfe7e4;
+    border-radius: 8px;
+    background: #fbfcfb;
+    overflow: hidden;
+}
+
+.machine-block-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: start;
+    padding: 10px 12px;
+    border-bottom: 1px solid #edf0ef;
+    background: #f4f8f6;
+}
+
+.machine-title {
+    min-width: 0;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+}
+
+.machine-counts {
+    color: var(--muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.equipment-flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 12px 12px;
+}
+
+.equipment-chip {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 7px;
+    border: 1px solid #d7e1dd;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #33433e;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.78rem;
+    overflow-wrap: anywhere;
+}
+
+.equipment-chip.placeholder {
+    border-color: #d9aa42;
+    background: #fff7df;
+    color: #6f4b00;
+    font-weight: 700;
+}
+
+.equipment-chip.candidate {
+    box-shadow: inset 0 -2px 0 rgba(31, 122, 104, 0.28);
+}
+
+.chip-dbno {
+    color: var(--muted);
+    font-size: 0.72rem;
+}
+
+.empty-machine {
+    padding: 10px 12px 12px;
+    color: var(--muted);
+    font-size: 0.84rem;
+}
+
 .action-row {
     display: grid;
     grid-template-columns: 1fr;
@@ -252,6 +353,23 @@ button:disabled {
     cursor: not-allowed;
     opacity: 0.56;
     transform: none;
+}
+
+.tabs .tab-button,
+.tabs .tab-button:nth-child(2) {
+    min-height: 44px;
+    border: 1px solid var(--line);
+    background: #f8faf9;
+    color: #45514d;
+    box-shadow: none;
+    font-size: 0.92rem;
+}
+
+.tabs .tab-button.active,
+.tabs .tab-button.active:nth-child(2) {
+    border-color: var(--primary);
+    background: #e8f5f1;
+    color: var(--primary-dark);
 }
 
 .table-wrap {
