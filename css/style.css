@@ -74,6 +74,13 @@ h2 {
     letter-spacing: 0;
 }
 
+h3 {
+    margin: 2px 0 10px;
+    color: #35423f;
+    font-size: 0.98rem;
+    letter-spacing: 0;
+}
+
 .form-group {
     margin-bottom: 14px;
 }
@@ -179,11 +186,25 @@ input[type="radio"] {
 
 .summary-box {
     min-height: 42px;
+    margin-bottom: 12px;
     padding: 10px 12px;
     border: 1px solid #d7e5df;
     border-radius: 8px;
     background: #f2faf6;
     color: #315e4d;
+    font-size: 0.9rem;
+}
+
+.inline-actions {
+    display: flex;
+    justify-content: flex-start;
+    margin: 0 0 10px;
+}
+
+.inline-actions button {
+    width: auto;
+    min-height: 42px;
+    padding: 10px 12px;
     font-size: 0.9rem;
 }
 
@@ -240,7 +261,7 @@ button:disabled {
 
 table {
     width: 100%;
-    min-width: 620px;
+    min-width: 760px;
     border-collapse: collapse;
     font-size: 0.86rem;
 }
@@ -256,6 +277,33 @@ td {
 th {
     color: #4c5a55;
     font-weight: 750;
+}
+
+.machine-table {
+    min-width: 820px;
+    margin-bottom: 14px;
+}
+
+.machine-table input[type="text"],
+.machine-table input[type="number"] {
+    min-height: 40px;
+    padding: 8px 9px;
+    font-size: 15px;
+}
+
+.machine-table input[type="checkbox"] {
+    margin-right: 0;
+}
+
+.machine-name {
+    font-weight: 700;
+}
+
+.machine-meta {
+    display: block;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 500;
 }
 
 .status-ok {
@@ -298,7 +346,7 @@ th {
     }
 
     .switch-row {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
     }
 
     .action-row {

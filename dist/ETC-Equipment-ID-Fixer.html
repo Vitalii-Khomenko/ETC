@@ -82,6 +82,13 @@ h2 {
     letter-spacing: 0;
 }
 
+h3 {
+    margin: 2px 0 10px;
+    color: #35423f;
+    font-size: 0.98rem;
+    letter-spacing: 0;
+}
+
 .form-group {
     margin-bottom: 14px;
 }
@@ -187,11 +194,25 @@ input[type="radio"] {
 
 .summary-box {
     min-height: 42px;
+    margin-bottom: 12px;
     padding: 10px 12px;
     border: 1px solid #d7e5df;
     border-radius: 8px;
     background: #f2faf6;
     color: #315e4d;
+    font-size: 0.9rem;
+}
+
+.inline-actions {
+    display: flex;
+    justify-content: flex-start;
+    margin: 0 0 10px;
+}
+
+.inline-actions button {
+    width: auto;
+    min-height: 42px;
+    padding: 10px 12px;
     font-size: 0.9rem;
 }
 
@@ -248,7 +269,7 @@ button:disabled {
 
 table {
     width: 100%;
-    min-width: 620px;
+    min-width: 760px;
     border-collapse: collapse;
     font-size: 0.86rem;
 }
@@ -264,6 +285,33 @@ td {
 th {
     color: #4c5a55;
     font-weight: 750;
+}
+
+.machine-table {
+    min-width: 820px;
+    margin-bottom: 14px;
+}
+
+.machine-table input[type="text"],
+.machine-table input[type="number"] {
+    min-height: 40px;
+    padding: 8px 9px;
+    font-size: 15px;
+}
+
+.machine-table input[type="checkbox"] {
+    margin-right: 0;
+}
+
+.machine-name {
+    font-weight: 700;
+}
+
+.machine-meta {
+    display: block;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 500;
 }
 
 .status-ok {
@@ -306,7 +354,7 @@ th {
     }
 
     .switch-row {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
     }
 
     .action-row {
@@ -385,13 +433,42 @@ th {
 
             <div class="switch-row">
                 <label>
+                    <input type="checkbox" id="useMachineRanges" checked>
+                    <span>Use machine ranges</span>
+                </label>
+                <label>
                     <input type="checkbox" id="onlyA" checked>
                     <span>Only replace id/txt with A/a</span>
                 </label>
                 <label>
-                    <input type="checkbox" id="onlyMesspunkt">
+                    <input type="checkbox" id="onlyMesspunkt" checked>
                     <span>Only type = Messpunkt</span>
                 </label>
+            </div>
+
+            <div id="machineRangesPanel">
+                <h3>Machine ranges</h3>
+                <div id="machineSummary" class="summary-box" aria-live="polite">No file selected.</div>
+                <div class="inline-actions">
+                    <button id="fillMachineRangesBtn" type="button">Fill From Start Number</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="machine-table">
+                        <thead>
+                            <tr>
+                                <th>Use</th>
+                                <th>Machine</th>
+                                <th>Matches</th>
+                                <th>Start number</th>
+                                <th>Step</th>
+                                <th>Range</th>
+                            </tr>
+                        </thead>
+                        <tbody id="machineBody">
+                            <tr><td colspan="6">No machine data.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div id="runSummary" class="summary-box" aria-live="polite">Ready to preview.</div>
@@ -410,6 +487,7 @@ th {
                     <thead>
                         <tr>
                             <th>dbno</th>
+                            <th>machine</th>
                             <th>id</th>
                             <th>txt</th>
                             <th>new</th>
@@ -417,7 +495,7 @@ th {
                         </tr>
                     </thead>
                     <tbody id="previewBody">
-                        <tr><td colspan="5">No data.</td></tr>
+                        <tr><td colspan="6">No data.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -552,6 +630,7 @@ if (typeof module !== "undefined") {
 const MAX_REPLACEMENTS = 10000;
 const MAX_START_NUMBER_DIGITS = 32;
 const MAX_NUMBER_STEP = 1000000;
+const UNASSIGNED_MACHINE_KEY = "__unassigned__";
 
 function parseAttributes(tag) {
     const attrs = {};
@@ -600,6 +679,42 @@ function parseStrictPositiveInteger(value) {
     const parsed = parseStrictNonNegativeInteger(value);
     if (parsed === null || parsed < 1) return null;
     return parsed;
+}
+
+function makeMachineKey(attrs, sequence) {
+    if (!attrs) return UNASSIGNED_MACHINE_KEY;
+    const id = attrs.id || "";
+    const txt = attrs.txt || "";
+    const dbno = attrs.dbno || "";
+    return `${sequence}:${dbno}:${id}:${txt}`;
+}
+
+function makeMachineInfo(attrs, start, sequence = 0) {
+    if (!attrs) {
+        return {
+            key: UNASSIGNED_MACHINE_KEY,
+            dbno: "",
+            id: "Unassigned",
+            txt: "Equipment outside BUILDING",
+            start: -1
+        };
+    }
+    return {
+        key: makeMachineKey(attrs, sequence),
+        dbno: attrs.dbno || "",
+        id: attrs.id || "",
+        txt: attrs.txt || "",
+        start
+    };
+}
+
+function getMachineTitle(machine) {
+    if (!machine) return "Unassigned";
+    const parts = [];
+    if (machine.id) parts.push(machine.id);
+    if (machine.txt && machine.txt !== machine.id) parts.push(machine.txt);
+    if (machine.dbno) parts.push(`dbno ${machine.dbno}`);
+    return parts.length > 0 ? parts.join(" | ") : "Unnamed BUILDING";
 }
 
 function readSettings(rawSettings) {
@@ -651,6 +766,100 @@ function getEquipmentStats(text) {
         placeholders,
         messpunktPlaceholders
     };
+}
+
+function scanEquipment(text) {
+    const items = [];
+    const machineMap = new Map();
+    const machineStack = [];
+    const tokenRe = /<\/BUILDING\s*>|<BUILDING\b[^>]*>|<ELECTRICALEQUIPMENT\b[^>]*>/g;
+    let machineSequence = 0;
+    let match;
+
+    while ((match = tokenRe.exec(String(text || ""))) !== null) {
+        const token = match[0];
+        if (/^<BUILDING\b/.test(token)) {
+            const machine = makeMachineInfo(parseAttributes(token), match.index, machineSequence);
+            machineSequence++;
+            machineStack.push(machine);
+            if (!machineMap.has(machine.key)) {
+                machineMap.set(machine.key, {
+                    machine,
+                    total: 0,
+                    messpunkt: 0,
+                    placeholders: 0,
+                    messpunktPlaceholders: 0,
+                    candidates: 0
+                });
+            }
+            continue;
+        }
+
+        if (/^<\/BUILDING/.test(token)) {
+            machineStack.pop();
+            continue;
+        }
+
+        const machine = machineStack.length > 0 ? machineStack[machineStack.length - 1] : makeMachineInfo(null, -1);
+        if (!machineMap.has(machine.key)) {
+            machineMap.set(machine.key, {
+                machine,
+                total: 0,
+                messpunkt: 0,
+                placeholders: 0,
+                messpunktPlaceholders: 0,
+                candidates: 0
+            });
+        }
+
+        const attrs = parseAttributes(token);
+        const summary = machineMap.get(machine.key);
+        summary.total++;
+        if (attrs.type === "Messpunkt") summary.messpunkt++;
+        if (hasAPlaceholder(attrs)) {
+            summary.placeholders++;
+            if (attrs.type === "Messpunkt") summary.messpunktPlaceholders++;
+        }
+
+        items.push({
+            start: match.index,
+            end: match.index + token.length,
+            tag: token,
+            attrs,
+            machine
+        });
+    }
+
+    return {
+        items,
+        machines: Array.from(machineMap.values()).sort((left, right) => left.machine.start - right.machine.start)
+    };
+}
+
+function getMachineSummaries(text, rawSettings = {}) {
+    const settings = readSettings({
+        mode: "batch",
+        startNumber: rawSettings.startNumber || "1",
+        quantity: rawSettings.quantity || "1",
+        numberStep: rawSettings.numberStep || "1",
+        onlyA: rawSettings.onlyA !== false,
+        onlyMesspunkt: rawSettings.onlyMesspunkt !== false
+    });
+    const scan = scanEquipment(text);
+    const summaries = new Map(scan.machines.map(summary => [summary.machine.key, {
+        ...summary,
+        candidates: 0
+    }]));
+
+    for (const item of scan.items) {
+        const candidate = shouldConsiderTag(item.attrs, settings);
+        if (candidate.ok) {
+            const summary = summaries.get(item.machine.key);
+            if (summary) summary.candidates++;
+        }
+    }
+
+    return Array.from(summaries.values());
 }
 
 function shouldConsiderTag(attrs, settings) {
@@ -743,6 +952,155 @@ function buildPlan(text, rawSettings) {
     return { settings, rows, replacements, warnings, errors: [] };
 }
 
+function readMachineSettings(rawSettings = {}) {
+    const onlyA = rawSettings.onlyA !== false;
+    const onlyMesspunkt = rawSettings.onlyMesspunkt !== false;
+    const ranges = Array.isArray(rawSettings.machineRanges) ? rawSettings.machineRanges : [];
+    const errors = [];
+    const machineRanges = [];
+
+    for (const range of ranges) {
+        if (!range || range.enabled === false) continue;
+        const key = String(range.machineKey || "");
+        const startNumber = String(range.startNumber || "").trim();
+        const numberStep = parseStrictPositiveInteger(range.numberStep ?? 1);
+
+        if (!key) errors.push("Machine range is missing a machine key.");
+        if (!/^\d+$/.test(startNumber)) errors.push(`Start number is required for machine ${cleanExportLogValue(range.machineLabel || key)}.`);
+        if (startNumber.length > MAX_START_NUMBER_DIGITS) errors.push(`Start number must be at most ${MAX_START_NUMBER_DIGITS} digits for machine ${cleanExportLogValue(range.machineLabel || key)}.`);
+        if (numberStep === null) errors.push(`Number step must be a positive whole number for machine ${cleanExportLogValue(range.machineLabel || key)}.`);
+        if (numberStep !== null && numberStep > MAX_NUMBER_STEP) errors.push(`Number step must not exceed ${MAX_NUMBER_STEP} for machine ${cleanExportLogValue(range.machineLabel || key)}.`);
+
+        machineRanges.push({
+            machineKey: key,
+            machineLabel: String(range.machineLabel || key),
+            startNumber,
+            numberStep,
+            enabled: true
+        });
+    }
+
+    if (machineRanges.length === 0) {
+        errors.push("Enable at least one machine range.");
+    }
+
+    return {
+        mode: "machine",
+        onlyA,
+        onlyMesspunkt,
+        machineRanges,
+        errors
+    };
+}
+
+function buildMachinePlan(text, rawSettings = {}) {
+    const settings = readMachineSettings(rawSettings);
+    if (settings.errors.length > 0) {
+        return { settings, rows: [], replacements: [], warnings: [], errors: settings.errors };
+    }
+
+    const scan = scanEquipment(text);
+    const rangeMap = new Map(settings.machineRanges.map(range => [range.machineKey, range]));
+    const counters = new Map(settings.machineRanges.map(range => [range.machineKey, 0]));
+    const rows = [];
+    const replacements = [];
+    const warnings = [];
+    const candidateSettings = {
+        onlyA: settings.onlyA,
+        onlyMesspunkt: settings.onlyMesspunkt,
+        mode: "batch",
+        useDbnoStart: false
+    };
+
+    for (const item of scan.items) {
+        const range = rangeMap.get(item.machine.key);
+        if (!range) continue;
+        const candidate = shouldConsiderTag(item.attrs, candidateSettings);
+        if (!candidate.ok) continue;
+
+        const offset = counters.get(item.machine.key) || 0;
+        const newValue = incrementDigitString(range.startNumber, offset, range.numberStep);
+        const machineTitle = getMachineTitle(item.machine);
+        const row = {
+            machineKey: item.machine.key,
+            machine: machineTitle,
+            dbno: item.attrs.dbno || "",
+            oldId: item.attrs.id || "",
+            oldTxt: item.attrs.txt || "",
+            newValue,
+            status: "will be replaced",
+            ok: true
+        };
+        rows.push(row);
+
+        let nextTag = replaceAttribute(item.tag, "id", newValue);
+        nextTag = replaceAttribute(nextTag, "txt", newValue);
+        replacements.push({
+            start: item.start,
+            end: item.end,
+            oldTag: item.tag,
+            newTag: nextTag,
+            row
+        });
+        if (replacements.length > MAX_REPLACEMENTS) {
+            return {
+                settings,
+                rows: [],
+                replacements: [],
+                warnings: [],
+                errors: [`Machine range replacements must not exceed ${MAX_REPLACEMENTS}.`]
+            };
+        }
+        counters.set(item.machine.key, offset + 1);
+    }
+
+    for (const range of settings.machineRanges) {
+        const count = counters.get(range.machineKey) || 0;
+        if (count === 0) {
+            warnings.push(`No matching A/a equipment was found for machine ${range.machineLabel}.`);
+        }
+    }
+
+    if (rows.length === 0) {
+        rows.push({
+            machine: "-",
+            dbno: "-",
+            oldId: "-",
+            oldTxt: "-",
+            newValue: "-",
+            status: "no matches",
+            ok: false
+        });
+    }
+
+    return { settings, rows, replacements, warnings, errors: [] };
+}
+
+function applyMachinePlan(text, rawSettings = {}) {
+    const plan = buildMachinePlan(text, rawSettings);
+    if (plan.errors.length > 0 || plan.replacements.length === 0) {
+        return {
+            content: text,
+            modified: false,
+            count: 0,
+            plan
+        };
+    }
+
+    let output = String(text || "");
+    for (let i = plan.replacements.length - 1; i >= 0; i--) {
+        const replacement = plan.replacements[i];
+        output = output.slice(0, replacement.start) + replacement.newTag + output.slice(replacement.end);
+    }
+
+    return {
+        content: output,
+        modified: output !== text,
+        count: plan.replacements.length,
+        plan
+    };
+}
+
 function applyPlan(text, rawSettings) {
     const plan = buildPlan(text, rawSettings);
     if (plan.errors.length > 0 || plan.replacements.length === 0) {
@@ -809,12 +1167,13 @@ function buildExportLog(details = {}) {
 
     if (replacements.length > 0) {
         lines.push("");
-        lines.push(["#", "dbno", "old id", "old txt", "new id", "new txt"].join("\t"));
+        lines.push(["#", "machine", "dbno", "old id", "old txt", "new id", "new txt"].join("\t"));
         replacements.forEach((replacement, index) => {
             const row = replacement.row || {};
             const newValue = cleanExportLogValue(row.newValue);
             lines.push([
                 index + 1,
+                cleanExportLogValue(row.machine),
                 cleanExportLogValue(row.dbno),
                 cleanExportLogValue(row.oldId),
                 cleanExportLogValue(row.oldTxt),
@@ -854,8 +1213,11 @@ if (typeof module !== "undefined") {
         parseStrictPositiveInteger,
         readSettings,
         getEquipmentStats,
+        getMachineSummaries,
         buildPlan,
         applyPlan,
+        buildMachinePlan,
+        applyMachinePlan,
         buildExportLog
     };
 }
@@ -873,7 +1235,7 @@ function byId(id) {
 }
 
 function currentMode() {
-    return "batch";
+    return byId("useMachineRanges").checked ? "machine" : "batch";
 }
 
 function getSuffix() {
@@ -891,14 +1253,15 @@ function validateOutputSuffix() {
 
 function getSettings() {
     return {
-        mode: "batch",
+        mode: currentMode(),
         startDbno: byId("startDbno").value,
         useDbnoStart: byId("useDbnoStart").checked,
         startNumber: byId("startNumber").value,
         quantity: byId("quantity").value,
         numberStep: byId("numberStep").value,
         onlyA: byId("onlyA").checked,
-        onlyMesspunkt: byId("onlyMesspunkt").checked
+        onlyMesspunkt: byId("onlyMesspunkt").checked,
+        machineRanges: getMachineRangeSettings()
     };
 }
 
@@ -911,8 +1274,10 @@ function setBusy(isBusy) {
 
 function updateModeUi() {
     const useFilter = byId("useDbnoStart").checked;
+    const useMachineRanges = byId("useMachineRanges").checked;
     byId("startDbno").disabled = !useFilter;
     byId("startDbnoGroup").classList.toggle("hidden", !useFilter);
+    byId("machineRangesPanel").classList.toggle("hidden", !useMachineRanges);
 }
 
 function renderFileSummary() {
@@ -922,7 +1287,8 @@ function renderFileSummary() {
         return;
     }
     const stats = getEquipmentStats(originalContent);
-    summary.textContent = `${loadedFile.name} | ${formatBytes(loadedFile.size)} | ELECTRICALEQUIPMENT: ${stats.total} | Messpunkt: ${stats.messpunkt} | A/a placeholders: ${stats.placeholders} | Messpunkt A/a: ${stats.messpunktPlaceholders}`;
+    const machines = getMachineSummaries(originalContent, getSettings());
+    summary.textContent = `${loadedFile.name} | ${formatBytes(loadedFile.size)} | Machines: ${machines.length} | ELECTRICALEQUIPMENT: ${stats.total} | Messpunkt: ${stats.messpunkt} | A/a placeholders: ${stats.placeholders} | Messpunkt A/a: ${stats.messpunktPlaceholders}`;
 }
 
 function renderRunSummary(text) {
@@ -935,10 +1301,10 @@ function renderPreview(rows) {
     for (const row of rows.slice(0, 80)) {
         const tr = document.createElement("tr");
         const statusClass = row.ok ? "status-ok" : "status-warn";
-        [row.dbno, row.oldId, row.oldTxt, row.newValue, row.status].forEach((value, index) => {
+        [row.dbno, row.machine || "-", row.oldId, row.oldTxt, row.newValue, row.status].forEach((value, index) => {
             const td = document.createElement("td");
             td.textContent = value;
-            if (index === 4) td.className = statusClass;
+            if (index === 5) td.className = statusClass;
             tr.appendChild(td);
         });
         body.appendChild(tr);
@@ -946,7 +1312,7 @@ function renderPreview(rows) {
     if (rows.length > 80) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = 5;
+        td.colSpan = 6;
         td.textContent = `Showing 80 of ${rows.length}.`;
         tr.appendChild(td);
         body.appendChild(tr);
@@ -986,6 +1352,7 @@ async function handleFileSelect(event) {
         currentContent = originalContent;
         loadedFile = file;
         syncQuantityWithDetectedPlaceholders();
+        renderMachineRanges();
         renderFileSummary();
         renderRunSummary("File loaded.");
         logOk(`Loaded ${file.name}`);
@@ -1004,6 +1371,183 @@ function syncQuantityWithDetectedPlaceholders() {
     if (detected > 0) byId("quantity").value = String(detected);
 }
 
+function getMachineRangeSettings() {
+    const rows = Array.from(document.querySelectorAll("#machineBody tr[data-machine-key]"));
+    return rows.map(row => ({
+        machineKey: row.dataset.machineKey,
+        machineLabel: row.dataset.machineLabel,
+        enabled: row.querySelector(".machine-enabled")?.checked === true,
+        startNumber: row.querySelector(".machine-start")?.value || "",
+        numberStep: row.querySelector(".machine-step")?.value || "1"
+    }));
+}
+
+function computeRangePreview(startNumber, count, step) {
+    if (count < 1) return "-";
+    const start = String(startNumber || "").trim();
+    const parsedStep = Number(String(step || "").trim());
+    if (!/^\d+$/.test(start) || !Number.isSafeInteger(parsedStep) || parsedStep < 1) return "-";
+    const last = incrementDigitString(start, count - 1, parsedStep);
+    return count === 1 ? start : `${start} - ${last}`;
+}
+
+function getExistingMachineRangeValues() {
+    const values = new Map();
+    for (const row of Array.from(document.querySelectorAll("#machineBody tr[data-machine-key]"))) {
+        values.set(row.dataset.machineKey, {
+            enabled: row.querySelector(".machine-enabled")?.checked === true,
+            startNumber: row.querySelector(".machine-start")?.value || "",
+            numberStep: row.querySelector(".machine-step")?.value || "1"
+        });
+    }
+    return values;
+}
+
+function nextMachineStartNumbers(summaries, existingValues, forceFill = false) {
+    const starts = new Map();
+    const globalStart = byId("startNumber").value;
+    const globalStep = Number(byId("numberStep").value || "1");
+    let cursor = /^\d+$/.test(globalStart) ? globalStart : "";
+
+    for (const summary of summaries) {
+        const count = summary.candidates;
+        const existing = existingValues.get(summary.machine.key);
+        const canKeepExisting = !forceFill && existing && existing.startNumber;
+        const startNumber = canKeepExisting ? existing.startNumber : cursor;
+        starts.set(summary.machine.key, startNumber);
+        if (cursor && count > 0 && Number.isSafeInteger(globalStep) && globalStep > 0) {
+            cursor = incrementDigitString(cursor, count, globalStep) || cursor;
+        }
+    }
+
+    return starts;
+}
+
+function updateMachineRangeRows() {
+    for (const row of Array.from(document.querySelectorAll("#machineBody tr[data-machine-key]"))) {
+        const count = Number(row.dataset.candidateCount || "0");
+        const start = row.querySelector(".machine-start")?.value || "";
+        const step = row.querySelector(".machine-step")?.value || "1";
+        const preview = row.querySelector(".machine-range-preview");
+        if (preview) preview.textContent = computeRangePreview(start, count, step);
+    }
+}
+
+function renderMachineRanges(options = {}) {
+    const summaryEl = byId("machineSummary");
+    const body = byId("machineBody");
+    body.textContent = "";
+
+    if (!currentContent || !loadedFile) {
+        summaryEl.textContent = "No file selected.";
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 6;
+        td.textContent = "No machine data.";
+        tr.appendChild(td);
+        body.appendChild(tr);
+        return;
+    }
+
+    const existingValues = getExistingMachineRangeValues();
+    const summaries = getMachineSummaries(currentContent, {
+        onlyA: byId("onlyA").checked,
+        onlyMesspunkt: byId("onlyMesspunkt").checked,
+        numberStep: byId("numberStep").value
+    });
+    const starts = nextMachineStartNumbers(summaries, existingValues, options.forceFill === true);
+    const activeCount = summaries.filter(summary => summary.candidates > 0).length;
+    const totalCandidates = summaries.reduce((sum, summary) => sum + summary.candidates, 0);
+    summaryEl.textContent = `Machines: ${summaries.length} | Machines with matches: ${activeCount} | Matches to replace: ${totalCandidates}`;
+
+    if (summaries.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 6;
+        td.textContent = "No BUILDING machines were found.";
+        tr.appendChild(td);
+        body.appendChild(tr);
+        return;
+    }
+
+    for (const summary of summaries) {
+        const machine = summary.machine;
+        const count = summary.candidates;
+        const existing = existingValues.get(machine.key);
+        const enabled = count > 0 && (options.forceFill === true || existing?.enabled !== false);
+        const step = existing?.numberStep || byId("numberStep").value || "1";
+        const startNumber = starts.get(machine.key) || "";
+        const tr = document.createElement("tr");
+        tr.dataset.machineKey = machine.key;
+        tr.dataset.machineLabel = getMachineTitle(machine);
+        tr.dataset.candidateCount = String(count);
+
+        const enabledTd = document.createElement("td");
+        const enabledInput = document.createElement("input");
+        enabledInput.type = "checkbox";
+        enabledInput.className = "machine-enabled";
+        enabledInput.checked = enabled;
+        enabledInput.disabled = count === 0;
+        enabledTd.appendChild(enabledInput);
+        tr.appendChild(enabledTd);
+
+        const machineTd = document.createElement("td");
+        const name = document.createElement("span");
+        name.className = "machine-name";
+        name.textContent = machine.id || "Unnamed BUILDING";
+        const meta = document.createElement("span");
+        meta.className = "machine-meta";
+        meta.textContent = [machine.txt && machine.txt !== machine.id ? machine.txt : "", machine.dbno ? `dbno ${machine.dbno}` : ""].filter(Boolean).join(" | ");
+        machineTd.appendChild(name);
+        if (meta.textContent) machineTd.appendChild(meta);
+        tr.appendChild(machineTd);
+
+        const countTd = document.createElement("td");
+        countTd.textContent = String(count);
+        tr.appendChild(countTd);
+
+        const startTd = document.createElement("td");
+        const startInput = document.createElement("input");
+        startInput.type = "text";
+        startInput.className = "machine-start";
+        startInput.inputMode = "numeric";
+        startInput.autocomplete = "off";
+        startInput.spellcheck = false;
+        startInput.value = count > 0 ? startNumber : "";
+        startInput.disabled = count === 0;
+        startTd.appendChild(startInput);
+        tr.appendChild(startTd);
+
+        const stepTd = document.createElement("td");
+        const stepInput = document.createElement("input");
+        stepInput.type = "number";
+        stepInput.className = "machine-step";
+        stepInput.min = "1";
+        stepInput.inputMode = "numeric";
+        stepInput.value = step;
+        stepInput.disabled = count === 0;
+        stepTd.appendChild(stepInput);
+        tr.appendChild(stepTd);
+
+        const rangeTd = document.createElement("td");
+        rangeTd.className = "machine-range-preview";
+        tr.appendChild(rangeTd);
+
+        body.appendChild(tr);
+    }
+
+    body.querySelectorAll("input").forEach(input => {
+        input.addEventListener("input", updateMachineRangeRows);
+        input.addEventListener("change", updateMachineRangeRows);
+    });
+    updateMachineRangeRows();
+}
+
+function fillMachineRangesFromGlobal() {
+    renderMachineRanges({ forceFill: true });
+    logOk("Machine ranges filled from the global start number.");
+}
+
 function previewChanges() {
     if (!loadedFile) {
         logWarn("Select a file first.");
@@ -1011,7 +1555,8 @@ function previewChanges() {
     }
     if (!validateOutputSuffix()) return;
 
-    const plan = buildPlan(currentContent, getSettings());
+    const settings = getSettings();
+    const plan = settings.mode === "machine" ? buildMachinePlan(currentContent, settings) : buildPlan(currentContent, settings);
     lastPlan = plan;
     if (plan.errors.length > 0) {
         renderPreview(plan.errors.map(message => ({
@@ -1044,7 +1589,8 @@ function applyChanges() {
     }
     if (!validateOutputSuffix()) return;
 
-    const result = applyPlan(currentContent, getSettings());
+    const settings = getSettings();
+    const result = settings.mode === "machine" ? applyMachinePlan(currentContent, settings) : applyPlan(currentContent, settings);
     lastPlan = result.plan;
     renderPreview(result.plan.rows);
 
@@ -1068,7 +1614,8 @@ function applyChanges() {
     logOk(`Replaced: ${result.count}`);
     result.plan.warnings.forEach(logWarn);
     for (const replacement of result.plan.replacements) {
-        log(`dbno ${replacement.row.dbno}: ${replacement.row.oldId}/${replacement.row.oldTxt} -> ${replacement.row.newValue}`);
+        const machinePrefix = replacement.row.machine ? `${replacement.row.machine} | ` : "";
+        log(`${machinePrefix}dbno ${replacement.row.dbno}: ${replacement.row.oldId}/${replacement.row.oldTxt} -> ${replacement.row.newValue}`);
     }
 }
 
@@ -1099,9 +1646,18 @@ document.addEventListener("DOMContentLoaded", () => {
     byId("previewBtn").addEventListener("click", previewChanges);
     byId("applyBtn").addEventListener("click", applyChanges);
     byId("downloadBtn").addEventListener("click", downloadCurrentFile);
-    byId("onlyMesspunkt").addEventListener("change", syncQuantityWithDetectedPlaceholders);
+    byId("fillMachineRangesBtn").addEventListener("click", fillMachineRangesFromGlobal);
+    byId("onlyA").addEventListener("change", renderMachineRanges);
+    byId("onlyMesspunkt").addEventListener("change", () => {
+        syncQuantityWithDetectedPlaceholders();
+        renderMachineRanges();
+    });
+    byId("numberStep").addEventListener("change", () => renderMachineRanges({ forceFill: true }));
+    byId("startNumber").addEventListener("change", () => renderMachineRanges({ forceFill: true }));
     byId("useDbnoStart").addEventListener("change", updateModeUi);
+    byId("useMachineRanges").addEventListener("change", updateModeUi);
     updateModeUi();
+    renderMachineRanges();
     renderFileSummary();
 });
     </script>

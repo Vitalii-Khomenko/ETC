@@ -20,9 +20,13 @@ Project Development and Publishing Guidelines for ETC Equipment ID Fixer
    - Start from the first matching `A` by default.
    - Apply a dbno start point only when the explicit dbno filter is enabled.
    - Respect the requested quantity in range mode.
+   - Detect `BUILDING` blocks as machine groups for machine range mode.
+   - In machine range mode, number matching equipment independently per enabled machine.
+   - Keep equipment outside a `BUILDING` under an explicit unassigned group.
    - Auto-fill the range quantity from the detected `A`/`a` placeholder count when a file is loaded.
    - Preserve source file formatting outside the edited attributes.
    - Keep the placeholder safety default enabled: only tags where `id` or `txt` is `A`/`a` are changed.
+   - Keep the Messpunkt safety default enabled unless the user intentionally changes it.
    - When a tag is accepted, update both `id` and `txt` to the same generated number.
    - Reject mixed numeric input instead of relying on permissive parsing.
    - Keep replacement quantity capped for mobile safety.
@@ -62,4 +66,4 @@ Project Development and Publishing Guidelines for ETC Equipment ID Fixer
    SECURITY.md                      # Security and privacy notes
    ```
 
-Last updated: 2026-05-24
+Last updated: 2026-05-25

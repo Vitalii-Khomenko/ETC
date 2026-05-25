@@ -34,6 +34,24 @@ Numbering example:
 | `55667788` | detected `A` count | `1` | The first matching `A` becomes `55667788`, the next matching `A` becomes `55667789`, and numbering continues until the quantity is reached. |
 | `55667788` | `3` | `2` | Generated values are `55667788`, `55667790`, and `55667792`. |
 
+Machine range mode is enabled by default. The app reads each `BUILDING` tag as
+a machine group and assigns matching `ELECTRICALEQUIPMENT` tags to the currently
+open machine. Each machine row shows its detected `A`/`a` count and has its own
+start number and number step.
+
+Machine example:
+
+```xml
+<BUILDING dbno="1" id="MA25000944" txt="BHKW">
+  <DISTRIBUTIONCABINET dbno="1" id="MA25000944" txt="BHKW">
+    <ELECTRICALEQUIPMENT dbno="6" id="A" txt="A" type="Messpunkt" ...>
+  </DISTRIBUTIONCABINET>
+</BUILDING>
+```
+
+With machine ranges enabled, that equipment is numbered by the range assigned
+to machine `MA25000944`.
+
 ## Files
 
 - `index.html` - split version with external `css/` and `js/`.
@@ -46,25 +64,28 @@ Numbering example:
 1. Open `dist/ETC-Equipment-ID-Fixer.html` in a browser.
 2. Select the `.etc` file.
 3. The app counts `ELECTRICALEQUIPMENT` tags, `Messpunkt` tags, and `A`/`a`
-   placeholders. In range mode, `Quantity` is filled from the detected
-   placeholder count.
-4. Enter the start number, quantity, and number step. By default, replacement
-   starts with the first matching `A` in file order.
-5. Enable `Use dbno start filter` only when the run should start at a specific
-   `dbno` or later.
-6. Press `Preview`, then `Replace`.
-7. Download the new `.etc` file and export log. The ETC output name is the
+   placeholders, then groups matching placeholders by `BUILDING` machine.
+4. Enter the global start number and number step, then press
+   `Fill From Start Number` to fill machine rows automatically.
+5. Adjust any machine row that needs its own start number or step.
+6. Disable `Use machine ranges` only when one global range should be used for
+   the whole file.
+7. Enable `Use dbno start filter` only when the global run should start at a
+   specific `dbno` or later.
+8. Press `Preview`, then `Replace`.
+9. Download the new `.etc` file and export log. The ETC output name is the
    original file name plus the configured suffix, for example `3_fixed.etc`.
    The log uses the exported file name plus `_export-log.txt`, for example
    `3_fixed_export-log.txt`.
 
 Each export log records the export timestamp, source file name, output file
-name, replacement settings, replacement count, warnings, and a row-by-row list
-of old `id`/`txt` values and new `id`/`txt` values.
+name, replacement settings, replacement count, machine label, warnings, and a
+row-by-row list of old `id`/`txt` values and new `id`/`txt` values.
 
 By default, `Only replace id/txt with A/a` is enabled: a tag is changed only when
 `id` or `txt` is `A`/`a`. Disable it only when you intentionally want to
-overwrite existing numeric IDs.
+overwrite existing numeric IDs. `Only type = Messpunkt` is also enabled by
+default for safer measurement-point updates.
 
 ## Validation
 

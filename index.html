@@ -63,13 +63,42 @@
 
             <div class="switch-row">
                 <label>
+                    <input type="checkbox" id="useMachineRanges" checked>
+                    <span>Use machine ranges</span>
+                </label>
+                <label>
                     <input type="checkbox" id="onlyA" checked>
                     <span>Only replace id/txt with A/a</span>
                 </label>
                 <label>
-                    <input type="checkbox" id="onlyMesspunkt">
+                    <input type="checkbox" id="onlyMesspunkt" checked>
                     <span>Only type = Messpunkt</span>
                 </label>
+            </div>
+
+            <div id="machineRangesPanel">
+                <h3>Machine ranges</h3>
+                <div id="machineSummary" class="summary-box" aria-live="polite">No file selected.</div>
+                <div class="inline-actions">
+                    <button id="fillMachineRangesBtn" type="button">Fill From Start Number</button>
+                </div>
+                <div class="table-wrap">
+                    <table class="machine-table">
+                        <thead>
+                            <tr>
+                                <th>Use</th>
+                                <th>Machine</th>
+                                <th>Matches</th>
+                                <th>Start number</th>
+                                <th>Step</th>
+                                <th>Range</th>
+                            </tr>
+                        </thead>
+                        <tbody id="machineBody">
+                            <tr><td colspan="6">No machine data.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <div id="runSummary" class="summary-box" aria-live="polite">Ready to preview.</div>
@@ -88,6 +117,7 @@
                     <thead>
                         <tr>
                             <th>dbno</th>
+                            <th>machine</th>
                             <th>id</th>
                             <th>txt</th>
                             <th>new</th>
@@ -95,7 +125,7 @@
                         </tr>
                     </thead>
                     <tbody id="previewBody">
-                        <tr><td colspan="5">No data.</td></tr>
+                        <tr><td colspan="6">No data.</td></tr>
                     </tbody>
                 </table>
             </div>

@@ -36,6 +36,22 @@ const mixedCaseAndSingleSide = [
   '  <ELECTRICALEQUIPMENT dbno="4" id="3313618" txt="3313618" type="Messpunkt" />',
   '</ROOT>'
 ].join('\n');
+const machineText = [
+  '<ROOT>',
+  '  <BUILDING dbno="1" id="MA100" txt="Machine One">',
+  '    <DISTRIBUTIONCABINET dbno="1" id="MA100" txt="Machine One">',
+  '      <ELECTRICALEQUIPMENT dbno="1" id="A" txt="A" type="Messpunkt" />',
+  '      <ELECTRICALEQUIPMENT dbno="2" id="A" txt="A" type="Messpunkt" />',
+  '    </DISTRIBUTIONCABINET>',
+  '  </BUILDING>',
+  '  <BUILDING dbno="2" id="MA200" txt="Machine Two">',
+  '    <DISTRIBUTIONCABINET dbno="2" id="MA200" txt="Machine Two">',
+  '      <ELECTRICALEQUIPMENT dbno="3" id="a" txt="a" type="Messpunkt" />',
+  '      <ELECTRICALEQUIPMENT dbno="4" id="A" txt="3313616" type="Messpunkt" />',
+  '    </DISTRIBUTIONCABINET>',
+  '  </BUILDING>',
+  '</ROOT>'
+].join('\n');
 const hundredRows = ['<ROOT>'];
 for (let i = 0; i < 105; i++) {
   hundredRows.push(`  <ELECTRICALEQUIPMENT dbno="${6 + i}" id="A" txt="A" type="Messpunkt" />`);
@@ -109,6 +125,32 @@ const mixed = fixer.applyPlan(mixedCaseAndSingleSide, {
   onlyMesspunkt: false
 });
 const mixedStats = fixer.getEquipmentStats(mixedCaseAndSingleSide);
+const machineSummaries = fixer.getMachineSummaries(machineText, {
+  onlyA: true,
+  onlyMesspunkt: true
+});
+const machineOne = machineSummaries.find(summary => summary.machine.id === 'MA100');
+const machineTwo = machineSummaries.find(summary => summary.machine.id === 'MA200');
+const machineRun = fixer.applyMachinePlan(machineText, {
+  onlyA: true,
+  onlyMesspunkt: true,
+  machineRanges: [
+    {
+      enabled: true,
+      machineKey: machineOne.machine.key,
+      machineLabel: 'MA100 | Machine One | dbno 1',
+      startNumber: '1000',
+      numberStep: '1'
+    },
+    {
+      enabled: true,
+      machineKey: machineTwo.machine.key,
+      machineLabel: 'MA200 | Machine Two | dbno 2',
+      startNumber: '2000',
+      numberStep: '10'
+    }
+  ]
+});
 const exportLogName = utils.makeExportLogName('3-template-all-a.etc', '_fixed');
 const exportLog = fixer.buildExportLog({
   exportedAt: '2026-05-24T12:34:56.000Z',
@@ -144,7 +186,16 @@ console.log(JSON.stringify({
   exportLogHasSource: exportLog.includes('Source file: 3-template-all-a.etc'),
   exportLogHasOutput: exportLog.includes('Output file: 3-template-all-a_fixed.etc'),
   exportLogHasCount: exportLog.includes('Count: 3'),
-  exportLogHasOneSidedChange: exportLog.includes('2\t2\tA\t3313616\t55667789\t55667789')
+  exportLogHasOneSidedChange: exportLog.includes('2\t\t2\tA\t3313616\t55667789\t55667789'),
+  machineCount: machineSummaries.length,
+  machineOneCandidates: machineOne.candidates,
+  machineTwoCandidates: machineTwo.candidates,
+  machineRunCount: machineRun.count,
+  machineOneFirst: machineRun.content.includes('dbno="1" id="1000" txt="1000"'),
+  machineOneSecond: machineRun.content.includes('dbno="2" id="1001" txt="1001"'),
+  machineTwoFirst: machineRun.content.includes('dbno="3" id="2000" txt="2000"'),
+  machineTwoSecond: machineRun.content.includes('dbno="4" id="2010" txt="2010"'),
+  machinePreviewHasMachine: machineRun.plan.rows.some(row => row.machine === 'MA200 | Machine Two | dbno 2' && row.newValue === '2010')
 }));
 """
     completed = subprocess.run(
@@ -220,6 +271,11 @@ const missingTxtOnly = [
   '  <ELECTRICALEQUIPMENT dbno="7" id="A" type="Messpunkt" />',
   '</ROOT>'
 ].join('\n');
+const tooManyMachineRows = ['<ROOT>', '<BUILDING dbno="1" id="MA100" txt="Machine One">'];
+for (let i = 0; i < 10001; i++) {
+  tooManyMachineRows.push(`  <ELECTRICALEQUIPMENT dbno="${i}" id="A" txt="A" type="Messpunkt" />`);
+}
+tooManyMachineRows.push('</BUILDING>', '</ROOT>');
 const badDbno = fixer.buildPlan(malformed, {
   mode: 'single',
   startDbno: '6abc',
@@ -248,6 +304,11 @@ const missingTxt = fixer.applyPlan(missingTxtOnly, {
   onlyA: false,
   onlyMesspunkt: true
 });
+const tooManyMachineText = tooManyMachineRows.join('\n');
+const tooManyMachine = fixer.getMachineSummaries(tooManyMachineText, {
+  onlyA: true,
+  onlyMesspunkt: true
+})[0];
 console.log(JSON.stringify({
   badDbnoRejected: badDbno.errors.length > 0,
   tooManyRejected: tooMany.errors.length > 0,
@@ -262,6 +323,17 @@ console.log(JSON.stringify({
     onlyMesspunkt: true
   }).errors.length > 0,
   missingTxtNotChanged: missingTxt.count === 0,
+  tooManyMachineRejected: fixer.buildMachinePlan(tooManyMachineText, {
+    onlyA: true,
+    onlyMesspunkt: true,
+    machineRanges: [{
+      enabled: true,
+      machineKey: tooManyMachine.machine.key,
+      machineLabel: 'MA100',
+      startNumber: '1000',
+      numberStep: '1'
+    }]
+  }).errors.length > 0,
   unsafeSuffixRejected: !utils.isSafeOutputSuffix('../bad'),
   safeSuffixAccepted: utils.isSafeOutputSuffix('_fixed-01'),
   sanitizedName: utils.sanitizeDownloadFileName('..\\\\bad:name.etc')
@@ -312,12 +384,22 @@ def main() -> None:
     assert_true(result["exportLogHasOutput"], "export log should include the output file name")
     assert_true(result["exportLogHasCount"], "export log should include the replacement count")
     assert_true(result["exportLogHasOneSidedChange"], "export log should include old and new id/txt values")
+    assert_true(result["machineCount"] == 2, "machine detection should find two BUILDING groups")
+    assert_true(result["machineOneCandidates"] == 2, "first machine should have two replacement candidates")
+    assert_true(result["machineTwoCandidates"] == 2, "second machine should have two replacement candidates")
+    assert_true(result["machineRunCount"] == 4, "machine mode should replace all enabled machine candidates")
+    assert_true(result["machineOneFirst"], "first machine should start from its own range")
+    assert_true(result["machineOneSecond"], "first machine should increment within its own range")
+    assert_true(result["machineTwoFirst"], "second machine should start from its own range")
+    assert_true(result["machineTwoSecond"], "second machine should use its own number step")
+    assert_true(result["machinePreviewHasMachine"], "machine mode preview rows should include machine labels")
 
     security = run_security_case()
     assert_true(security["badDbnoRejected"], "strict dbno parsing should reject mixed input")
     assert_true(security["tooManyRejected"], "quantity limit should reject oversized runs")
     assert_true(security["badStepRejected"], "number step validation should reject non-positive values")
     assert_true(security["missingTxtNotChanged"], "tags without both id and txt should not be partially changed")
+    assert_true(security["tooManyMachineRejected"], "machine range mode should reject oversized runs")
     assert_true(security["unsafeSuffixRejected"], "unsafe suffixes should be rejected")
     assert_true(security["safeSuffixAccepted"], "safe suffixes should be accepted")
     assert_true("\\" not in security["sanitizedName"], "download file names should be sanitized")

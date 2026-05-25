@@ -22,9 +22,9 @@ Real `.etc` exports are ignored by `.gitignore` and should not be committed to
 public repositories.
 
 Export logs are generated locally with each download. They include source file
-names, output file names, replacement settings, old `id`/`txt` values, and new
-`id`/`txt` values, so treat them like ETC-derived data and keep them local
-unless reviewed.
+names, output file names, machine labels, replacement settings, old `id`/`txt`
+values, and new `id`/`txt` values, so treat them like ETC-derived data and keep
+them local unless reviewed.
 
 ## Supported Deployment
 
@@ -66,6 +66,8 @@ For the single-file build, `script-src` and `style-src` require
 - Range mode is capped to protect mobile browsers from accidental oversized
   runs.
 - The number step is strictly validated and capped.
+- Machine range mode requires a valid start number for every enabled machine
+  with matching equipment.
 - Download suffixes are limited to safe filename characters.
 - Export log names are derived from sanitized output file names.
 - Tags missing either `id` or `txt` are skipped instead of being partially
