@@ -39,6 +39,10 @@ a machine group and assigns matching `ELECTRICALEQUIPMENT` tags to the currently
 open machine. Each machine row shows its detected `A`/`a` count and has its own
 start number and number step.
 
+Number entry fields are empty by default. The operator must enter the required
+start numbers, steps, quantity, and optional dbno filter before previewing or
+replacing.
+
 Machine example:
 
 ```xml
@@ -72,7 +76,8 @@ which measurements belong to which machine before replacement.
 3. The app counts `ELECTRICALEQUIPMENT` tags, `Messpunkt` tags, and `A`/`a`
    placeholders, then groups matching placeholders by `BUILDING` machine.
 4. Enter the global start number and number step, then press
-   `Fill From Start Number` to fill machine rows automatically.
+   `Fill From Start Number` when machine rows should be filled from those
+   values. Leave it alone when each machine row will be filled manually.
 5. Adjust any machine row that needs its own start number or step.
 6. Disable `Use machine ranges` only when one global range should be used for
    the whole file.

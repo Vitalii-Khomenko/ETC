@@ -220,7 +220,6 @@ async function handleFileSelect(event) {
         originalContent = await readFileAsText(file);
         currentContent = originalContent;
         loadedFile = file;
-        syncQuantityWithDetectedPlaceholders();
         renderMachineRanges();
         renderMachineDiagram();
         renderFileSummary();
@@ -234,13 +233,6 @@ async function handleFileSelect(event) {
     }
 }
 
-function syncQuantityWithDetectedPlaceholders() {
-    if (!currentContent) return;
-    const stats = getEquipmentStats(currentContent);
-    const detected = byId("onlyMesspunkt").checked ? stats.messpunktPlaceholders : stats.placeholders;
-    if (detected > 0) byId("quantity").value = String(detected);
-}
-
 function getMachineRangeSettings() {
     const rows = Array.from(document.querySelectorAll("#machineBody tr[data-machine-key]"));
     return rows.map(row => ({
@@ -248,7 +240,7 @@ function getMachineRangeSettings() {
         machineLabel: row.dataset.machineLabel,
         enabled: row.querySelector(".machine-enabled")?.checked === true,
         startNumber: row.querySelector(".machine-start")?.value || "",
-        numberStep: row.querySelector(".machine-step")?.value || "1"
+        numberStep: row.querySelector(".machine-step")?.value || ""
     }));
 }
 
@@ -267,7 +259,7 @@ function getExistingMachineRangeValues() {
         values.set(row.dataset.machineKey, {
             enabled: row.querySelector(".machine-enabled")?.checked === true,
             startNumber: row.querySelector(".machine-start")?.value || "",
-            numberStep: row.querySelector(".machine-step")?.value || "1"
+            numberStep: row.querySelector(".machine-step")?.value || ""
         });
     }
     return values;
@@ -275,9 +267,11 @@ function getExistingMachineRangeValues() {
 
 function nextMachineStartNumbers(summaries, existingValues, forceFill = false) {
     const starts = new Map();
-    const globalStart = byId("startNumber").value;
-    const globalStep = Number(byId("numberStep").value || "1");
-    let cursor = /^\d+$/.test(globalStart) ? globalStart : "";
+    const globalStart = byId("startNumber").value.trim();
+    const rawGlobalStep = byId("numberStep").value.trim();
+    const canAutoFill = /^\d+$/.test(globalStart) && /^\d+$/.test(rawGlobalStep);
+    const globalStep = canAutoFill ? Number(rawGlobalStep) : null;
+    let cursor = canAutoFill ? globalStart : "";
 
     for (const summary of summaries) {
         const count = summary.candidates;
@@ -297,7 +291,7 @@ function updateMachineRangeRows() {
     for (const row of Array.from(document.querySelectorAll("#machineBody tr[data-machine-key]"))) {
         const count = Number(row.dataset.candidateCount || "0");
         const start = row.querySelector(".machine-start")?.value || "";
-        const step = row.querySelector(".machine-step")?.value || "1";
+        const step = row.querySelector(".machine-step")?.value || "";
         const preview = row.querySelector(".machine-range-preview");
         if (preview) preview.textContent = computeRangePreview(start, count, step);
     }
@@ -345,7 +339,7 @@ function renderMachineRanges(options = {}) {
         const count = summary.candidates;
         const existing = existingValues.get(machine.key);
         const enabled = count > 0 && (options.forceFill === true || existing?.enabled !== false);
-        const step = existing?.numberStep || byId("numberStep").value || "1";
+        const step = existing ? existing.numberStep : byId("numberStep").value;
         const startNumber = starts.get(machine.key) || "";
         const tr = document.createElement("tr");
         tr.dataset.machineKey = machine.key;
@@ -420,6 +414,11 @@ function refreshGroupedViews(options = {}) {
 }
 
 function fillMachineRangesFromGlobal() {
+    if (!/^\d+$/.test(byId("startNumber").value.trim()) || !/^\d+$/.test(byId("numberStep").value.trim())) {
+        logWarn("Enter a global start number and number step before filling machine ranges.");
+        renderMachineRanges({ forceFill: true });
+        return;
+    }
     renderMachineRanges({ forceFill: true });
     logOk("Machine ranges filled from the global start number.");
 }
@@ -528,7 +527,6 @@ document.addEventListener("DOMContentLoaded", () => {
     byId("previewTab").addEventListener("click", () => setReviewTab("previewPanel"));
     byId("onlyA").addEventListener("change", refreshGroupedViews);
     byId("onlyMesspunkt").addEventListener("change", () => {
-        syncQuantityWithDetectedPlaceholders();
         refreshGroupedViews();
     });
     byId("numberStep").addEventListener("change", () => refreshGroupedViews({ forceFill: true }));

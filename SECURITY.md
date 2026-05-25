@@ -65,6 +65,8 @@ For the single-file build, `script-src` and `style-src` require
 ## Input And Output Hardening
 
 - File selection is limited by extension and size before reading.
+- Number entry fields are empty by default, so the operator must intentionally
+  enter replacement ranges before previewing or replacing.
 - Numeric fields use strict whole-number validation, so mixed input such as
   `6abc` is rejected.
 - Range mode is capped to protect mobile browsers from accidental oversized

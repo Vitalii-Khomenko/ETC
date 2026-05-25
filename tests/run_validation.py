@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -10,6 +11,15 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ETC_PATH = ROOT / "3.etc"
 SOURCE_MACHINE_ETC_PATH = ROOT / "5.etc"
 TEMPLATE_PATH = ROOT / "templates" / "3-template-all-a.etc"
+
+
+def run_ui_defaults_case() -> dict:
+    html = (ROOT / "index.html").read_text(encoding="utf-8")
+    fields = ["startNumber", "numberStep", "quantity", "startDbno"]
+    return {
+        f"{field}HasNoDefaultValue": re.search(rf'id="{field}"[^>]*\bvalue=', html) is None
+        for field in fields
+    }
 
 
 def run_node_case() -> dict:
@@ -72,6 +82,7 @@ const batch = fixer.applyPlan(text, {
   useDbnoStart: false,
   startNumber: '3313615',
   quantity: '2',
+  numberStep: '1',
   onlyA: true,
   onlyMesspunkt: true
 });
@@ -370,6 +381,15 @@ console.log(JSON.stringify({
     onlyA: true,
     onlyMesspunkt: true
   }).errors.length > 0,
+  missingStepRejected: fixer.buildPlan(malformed, {
+    mode: 'batch',
+    startDbno: '',
+    useDbnoStart: false,
+    startNumber: '55667788',
+    quantity: '10',
+    onlyA: true,
+    onlyMesspunkt: true
+  }).errors.length > 0,
   missingTxtNotChanged: missingTxt.count === 0,
   tooManyMachineRejected: fixer.buildMachinePlan(tooManyMachineText, {
     onlyA: true,
@@ -380,6 +400,16 @@ console.log(JSON.stringify({
       machineLabel: 'MA100',
       startNumber: '1000',
       numberStep: '1'
+    }]
+  }).errors.length > 0,
+  missingMachineStepRejected: fixer.buildMachinePlan(tooManyMachineText, {
+    onlyA: true,
+    onlyMesspunkt: true,
+    machineRanges: [{
+      enabled: true,
+      machineKey: tooManyMachine.machine.key,
+      machineLabel: 'MA100',
+      startNumber: '1000'
     }]
   }).errors.length > 0,
   unsafeSuffixRejected: !utils.isSafeOutputSuffix('../bad'),
@@ -403,6 +433,12 @@ def assert_true(value: bool, message: str) -> None:
 
 
 def main() -> None:
+    ui_defaults = run_ui_defaults_case()
+    assert_true(ui_defaults["startNumberHasNoDefaultValue"], "start number input should be empty by default")
+    assert_true(ui_defaults["numberStepHasNoDefaultValue"], "number step input should be empty by default")
+    assert_true(ui_defaults["quantityHasNoDefaultValue"], "quantity input should be empty by default")
+    assert_true(ui_defaults["startDbnoHasNoDefaultValue"], "start dbno input should be empty by default")
+
     result = run_node_case()
     assert_true(result["singleCount"] == 1, "single mode should replace one tag")
     assert_true(result["singleHas6"], "single mode should update dbno 6")
@@ -452,8 +488,10 @@ def main() -> None:
     assert_true(security["badDbnoRejected"], "strict dbno parsing should reject mixed input")
     assert_true(security["tooManyRejected"], "quantity limit should reject oversized runs")
     assert_true(security["badStepRejected"], "number step validation should reject non-positive values")
+    assert_true(security["missingStepRejected"], "number step validation should reject missing values")
     assert_true(security["missingTxtNotChanged"], "tags without both id and txt should not be partially changed")
     assert_true(security["tooManyMachineRejected"], "machine range mode should reject oversized runs")
+    assert_true(security["missingMachineStepRejected"], "machine range mode should reject missing number steps")
     assert_true(security["unsafeSuffixRejected"], "unsafe suffixes should be rejected")
     assert_true(security["safeSuffixAccepted"], "safe suffixes should be accepted")
     assert_true("\\" not in security["sanitizedName"], "download file names should be sanitized")

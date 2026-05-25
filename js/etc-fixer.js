@@ -93,7 +93,7 @@ function readSettings(rawSettings) {
     const useDbnoStart = mode === "single" || rawSettings.useDbnoStart === true;
     const startDbno = useDbnoStart ? parseStrictNonNegativeInteger(rawSettings.startDbno) : null;
     const quantity = mode === "batch" ? parseStrictPositiveInteger(rawSettings.quantity) : 1;
-    const numberStep = mode === "batch" ? parseStrictPositiveInteger(rawSettings.numberStep ?? 1) : 1;
+    const numberStep = mode === "batch" ? parseStrictPositiveInteger(rawSettings.numberStep) : 1;
     const startNumber = String(rawSettings.startNumber || "").trim();
 
     const errors = [];
@@ -208,14 +208,12 @@ function scanEquipment(text) {
 }
 
 function getMachineSummaries(text, rawSettings = {}) {
-    const settings = readSettings({
+    const settings = {
         mode: "batch",
-        startNumber: rawSettings.startNumber || "1",
-        quantity: rawSettings.quantity || "1",
-        numberStep: rawSettings.numberStep || "1",
+        useDbnoStart: false,
         onlyA: rawSettings.onlyA !== false,
         onlyMesspunkt: rawSettings.onlyMesspunkt !== false
-    });
+    };
     const scan = scanEquipment(text);
     const summaries = new Map(scan.machines.map(summary => [summary.machine.key, {
         ...summary,
@@ -391,7 +389,7 @@ function readMachineSettings(rawSettings = {}) {
         if (!range || range.enabled === false) continue;
         const key = String(range.machineKey || "");
         const startNumber = String(range.startNumber || "").trim();
-        const numberStep = parseStrictPositiveInteger(range.numberStep ?? 1);
+        const numberStep = parseStrictPositiveInteger(range.numberStep);
 
         if (!key) errors.push("Machine range is missing a machine key.");
         if (!/^\d+$/.test(startNumber)) errors.push(`Start number is required for machine ${cleanExportLogValue(range.machineLabel || key)}.`);

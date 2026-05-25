@@ -24,7 +24,7 @@ Project Development and Publishing Guidelines for ETC Equipment ID Fixer
    - In machine range mode, number matching equipment independently per enabled machine.
    - Keep equipment outside a `BUILDING` under an explicit unassigned group.
    - Keep the machine diagram grouped by `BUILDING` and synchronized with the current safety filters.
-   - Auto-fill the range quantity from the detected `A`/`a` placeholder count when a file is loaded.
+   - Keep number entry fields empty by default; the operator must enter replacement ranges intentionally.
    - Preserve source file formatting outside the edited attributes.
    - Keep the placeholder safety default enabled: only tags where `id` or `txt` is `A`/`a` are changed.
    - Keep the Messpunkt safety default enabled unless the user intentionally changes it.

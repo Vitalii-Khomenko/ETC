@@ -517,18 +517,18 @@ th {
             <div class="grid-2">
                 <div class="form-group">
                     <label for="startNumber">Start number</label>
-                    <input type="text" id="startNumber" value="55667788" inputmode="numeric" autocomplete="off" spellcheck="false">
+                    <input type="text" id="startNumber" inputmode="numeric" autocomplete="off" spellcheck="false">
                 </div>
                 <div class="form-group">
                     <label for="numberStep">Number step</label>
-                    <input type="number" id="numberStep" value="1" min="1" inputmode="numeric">
+                    <input type="number" id="numberStep" min="1" inputmode="numeric">
                 </div>
             </div>
 
             <div class="grid-2">
                 <div class="form-group">
                     <label for="quantity">Quantity</label>
-                    <input type="number" id="quantity" value="100" min="1" inputmode="numeric">
+                    <input type="number" id="quantity" min="1" inputmode="numeric">
                 </div>
                 <div class="form-group">
                     <label for="suffix">File suffix</label>
@@ -545,7 +545,7 @@ th {
                 </div>
                 <div class="form-group" id="startDbnoGroup">
                     <label for="startDbno">Start dbno</label>
-                    <input type="number" id="startDbno" value="6" min="0" inputmode="numeric">
+                    <input type="number" id="startDbno" min="0" inputmode="numeric">
                 </div>
             </div>
 
@@ -857,7 +857,7 @@ function readSettings(rawSettings) {
     const useDbnoStart = mode === "single" || rawSettings.useDbnoStart === true;
     const startDbno = useDbnoStart ? parseStrictNonNegativeInteger(rawSettings.startDbno) : null;
     const quantity = mode === "batch" ? parseStrictPositiveInteger(rawSettings.quantity) : 1;
-    const numberStep = mode === "batch" ? parseStrictPositiveInteger(rawSettings.numberStep ?? 1) : 1;
+    const numberStep = mode === "batch" ? parseStrictPositiveInteger(rawSettings.numberStep) : 1;
     const startNumber = String(rawSettings.startNumber || "").trim();
 
     const errors = [];
@@ -972,14 +972,12 @@ function scanEquipment(text) {
 }
 
 function getMachineSummaries(text, rawSettings = {}) {
-    const settings = readSettings({
+    const settings = {
         mode: "batch",
-        startNumber: rawSettings.startNumber || "1",
-        quantity: rawSettings.quantity || "1",
-        numberStep: rawSettings.numberStep || "1",
+        useDbnoStart: false,
         onlyA: rawSettings.onlyA !== false,
         onlyMesspunkt: rawSettings.onlyMesspunkt !== false
-    });
+    };
     const scan = scanEquipment(text);
     const summaries = new Map(scan.machines.map(summary => [summary.machine.key, {
         ...summary,
@@ -1155,7 +1153,7 @@ function readMachineSettings(rawSettings = {}) {
         if (!range || range.enabled === false) continue;
         const key = String(range.machineKey || "");
         const startNumber = String(range.startNumber || "").trim();
-        const numberStep = parseStrictPositiveInteger(range.numberStep ?? 1);
+        const numberStep = parseStrictPositiveInteger(range.numberStep);
 
         if (!key) errors.push("Machine range is missing a machine key.");
         if (!/^\d+$/.test(startNumber)) errors.push(`Start number is required for machine ${cleanExportLogValue(range.machineLabel || key)}.`);
@@ -1638,7 +1636,6 @@ async function handleFileSelect(event) {
         originalContent = await readFileAsText(file);
         currentContent = originalContent;
         loadedFile = file;
-        syncQuantityWithDetectedPlaceholders();
         renderMachineRanges();
         renderMachineDiagram();
         renderFileSummary();
@@ -1652,13 +1649,6 @@ async function handleFileSelect(event) {
     }
 }
 
-function syncQuantityWithDetectedPlaceholders() {
-    if (!currentContent) return;
-    const stats = getEquipmentStats(currentContent);
-    const detected = byId("onlyMesspunkt").checked ? stats.messpunktPlaceholders : stats.placeholders;
-    if (detected > 0) byId("quantity").value = String(detected);
-}
-
 function getMachineRangeSettings() {
     const rows = Array.from(document.querySelectorAll("#machineBody tr[data-machine-key]"));
     return rows.map(row => ({
@@ -1666,7 +1656,7 @@ function getMachineRangeSettings() {
         machineLabel: row.dataset.machineLabel,
         enabled: row.querySelector(".machine-enabled")?.checked === true,
         startNumber: row.querySelector(".machine-start")?.value || "",
-        numberStep: row.querySelector(".machine-step")?.value || "1"
+        numberStep: row.querySelector(".machine-step")?.value || ""
     }));
 }
 
@@ -1685,7 +1675,7 @@ function getExistingMachineRangeValues() {
         values.set(row.dataset.machineKey, {
             enabled: row.querySelector(".machine-enabled")?.checked === true,
             startNumber: row.querySelector(".machine-start")?.value || "",
-            numberStep: row.querySelector(".machine-step")?.value || "1"
+            numberStep: row.querySelector(".machine-step")?.value || ""
         });
     }
     return values;
@@ -1693,9 +1683,11 @@ function getExistingMachineRangeValues() {
 
 function nextMachineStartNumbers(summaries, existingValues, forceFill = false) {
     const starts = new Map();
-    const globalStart = byId("startNumber").value;
-    const globalStep = Number(byId("numberStep").value || "1");
-    let cursor = /^\d+$/.test(globalStart) ? globalStart : "";
+    const globalStart = byId("startNumber").value.trim();
+    const rawGlobalStep = byId("numberStep").value.trim();
+    const canAutoFill = /^\d+$/.test(globalStart) && /^\d+$/.test(rawGlobalStep);
+    const globalStep = canAutoFill ? Number(rawGlobalStep) : null;
+    let cursor = canAutoFill ? globalStart : "";
 
     for (const summary of summaries) {
         const count = summary.candidates;
@@ -1715,7 +1707,7 @@ function updateMachineRangeRows() {
     for (const row of Array.from(document.querySelectorAll("#machineBody tr[data-machine-key]"))) {
         const count = Number(row.dataset.candidateCount || "0");
         const start = row.querySelector(".machine-start")?.value || "";
-        const step = row.querySelector(".machine-step")?.value || "1";
+        const step = row.querySelector(".machine-step")?.value || "";
         const preview = row.querySelector(".machine-range-preview");
         if (preview) preview.textContent = computeRangePreview(start, count, step);
     }
@@ -1763,7 +1755,7 @@ function renderMachineRanges(options = {}) {
         const count = summary.candidates;
         const existing = existingValues.get(machine.key);
         const enabled = count > 0 && (options.forceFill === true || existing?.enabled !== false);
-        const step = existing?.numberStep || byId("numberStep").value || "1";
+        const step = existing ? existing.numberStep : byId("numberStep").value;
         const startNumber = starts.get(machine.key) || "";
         const tr = document.createElement("tr");
         tr.dataset.machineKey = machine.key;
@@ -1838,6 +1830,11 @@ function refreshGroupedViews(options = {}) {
 }
 
 function fillMachineRangesFromGlobal() {
+    if (!/^\d+$/.test(byId("startNumber").value.trim()) || !/^\d+$/.test(byId("numberStep").value.trim())) {
+        logWarn("Enter a global start number and number step before filling machine ranges.");
+        renderMachineRanges({ forceFill: true });
+        return;
+    }
     renderMachineRanges({ forceFill: true });
     logOk("Machine ranges filled from the global start number.");
 }
@@ -1946,7 +1943,6 @@ document.addEventListener("DOMContentLoaded", () => {
     byId("previewTab").addEventListener("click", () => setReviewTab("previewPanel"));
     byId("onlyA").addEventListener("change", refreshGroupedViews);
     byId("onlyMesspunkt").addEventListener("change", () => {
-        syncQuantityWithDetectedPlaceholders();
         refreshGroupedViews();
     });
     byId("numberStep").addEventListener("change", () => refreshGroupedViews({ forceFill: true }));
