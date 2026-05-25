@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <title>ETC Equipment ID Fixer</title>
+    <style>
+:root {
+    --primary: #1f7a68;
+    --primary-dark: #15584b;
+    --accent: #bc5b2c;
+    --bg: #f5f6f2;
+    --surface: #ffffff;
+    --text: #25302d;
+    --muted: #66736f;
+    --line: #d8dfdc;
+    --ok: #18784c;
+    --warn: #9a6400;
+    --error: #b3261e;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100dvh;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+    line-height: 1.45;
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+}
+
+.container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding-bottom: 18px;
+}
+
+header {
+    text-align: center;
+    margin: 4px 0 16px;
+}
+
+h1 {
+    display: inline-block;
+    margin: 0 0 6px;
+    padding-bottom: 6px;
+    border-bottom: 3px solid var(--primary);
+    color: #1e3630;
+    font-size: 1.55rem;
+    font-weight: 750;
+    letter-spacing: 0;
+}
+
+header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
+.card {
+    margin-bottom: 14px;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid #e7ecea;
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(24, 42, 36, 0.05);
+}
+
+h2 {
+    margin: 0 0 14px;
+    padding-bottom: 9px;
+    border-bottom: 1px solid #edf0ef;
+    color: #35423f;
+    font-size: 1.05rem;
+    letter-spacing: 0;
+}
+
+.form-group {
+    margin-bottom: 14px;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    color: #48544f;
+    font-size: 0.94rem;
+    font-weight: 650;
+    user-select: none;
+}
+
+input[type="text"],
+input[type="number"] {
+    width: 100%;
+    min-height: 48px;
+    padding: 11px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fbfcfb;
+    color: var(--text);
+    font-size: 16px;
+}
+
+input[type="file"] {
+    width: 100%;
+    min-height: 54px;
+    padding: 14px;
+    border: 2px dashed var(--primary);
+    border-radius: 8px;
+    background: #eef8f5;
+    font-size: 0.95rem;
+}
+
+input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(31, 122, 104, 0.16);
+    outline: none;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    width: 22px;
+    height: 22px;
+    margin: 0 8px 0 0;
+    accent-color: var(--primary);
+    vertical-align: middle;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.segmented {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.segmented label {
+    margin: 0;
+}
+
+.segmented span {
+    display: flex;
+    min-height: 46px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #f8faf9;
+    color: #45514d;
+}
+
+.segmented input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.segmented input:checked + span {
+    border-color: var(--primary);
+    background: #e8f5f1;
+    color: var(--primary-dark);
+}
+
+.switch-row {
+    display: grid;
+    gap: 9px;
+    margin-bottom: 14px;
+}
+
+.switch-row label {
+    display: flex;
+    min-height: 36px;
+    align-items: center;
+    margin: 0;
+}
+
+.summary-box {
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid #d7e5df;
+    border-radius: 8px;
+    background: #f2faf6;
+    color: #315e4d;
+    font-size: 0.9rem;
+}
+
+.action-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 9px;
+    position: sticky;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    z-index: 2;
+    margin-top: 10px;
+    padding-top: 10px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.88), var(--surface) 36%);
+}
+
+button {
+    width: 100%;
+    min-height: 52px;
+    padding: 13px 14px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 2px 5px rgba(31, 122, 104, 0.25);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+button:nth-child(2) {
+    background: var(--accent);
+    box-shadow: 0 2px 5px rgba(188, 91, 44, 0.22);
+}
+
+button:active {
+    transform: scale(0.99);
+}
+
+button:focus-visible {
+    outline: 3px solid rgba(31, 122, 104, 0.24);
+    outline-offset: 2px;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.56;
+    transform: none;
+}
+
+.table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+table {
+    width: 100%;
+    min-width: 620px;
+    border-collapse: collapse;
+    font-size: 0.86rem;
+}
+
+th,
+td {
+    padding: 9px 8px;
+    border-bottom: 1px solid #edf0ef;
+    text-align: left;
+    vertical-align: top;
+}
+
+th {
+    color: #4c5a55;
+    font-weight: 750;
+}
+
+.status-ok {
+    color: var(--ok);
+    font-weight: 700;
+}
+
+.status-warn {
+    color: var(--warn);
+    font-weight: 700;
+}
+
+.status-error {
+    color: var(--error);
+    font-weight: 700;
+}
+
+#log {
+    height: clamp(160px, 28dvh, 250px);
+    overflow-y: auto;
+    padding: 12px;
+    border-radius: 8px;
+    background: #263531;
+    color: #eef4f1;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.82rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    scrollbar-width: thin;
+}
+
+.log-ok { color: #72d39f; font-weight: 700; }
+.log-warn { color: #ffd36a; font-weight: 700; }
+.log-error { color: #ff8a80; font-weight: 700; }
+.hidden { display: none; }
+
+@media (min-width: 620px) {
+    .grid-2 {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .switch-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .action-row {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+}
+
+@media (max-width: 420px) {
+    body {
+        padding: 10px;
+    }
+
+    .card {
+        padding: 14px;
+    }
+
+    h1 {
+        font-size: 1.34rem;
+    }
+}
+    </style>
+</head>
+<body>
+    <main class="container">
+        <header>
+            <h1>ETC Equipment ID Fixer</h1>
+            <p>ELECTRICALEQUIPMENT id/txt</p>
+        </header>
+
+        <section class="card">
+            <h2>1. File</h2>
+            <div class="form-group">
+                <label for="fileInput">ETC file</label>
+                <input type="file" id="fileInput" accept=".etc,.xml,.txt">
+            </div>
+            <div id="fileSummary" class="summary-box" aria-live="polite">No file selected.</div>
+        </section>
+
+        <section class="card">
+            <h2>2. Replacement</h2>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="startNumber">Start number</label>
+                    <input type="text" id="startNumber" value="55667788" inputmode="numeric" autocomplete="off" spellcheck="false">
+                </div>
+                <div class="form-group">
+                    <label for="numberStep">Number step</label>
+                    <input type="number" id="numberStep" value="1" min="1" inputmode="numeric">
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="quantity">Quantity</label>
+                    <input type="number" id="quantity" value="100" min="1" inputmode="numeric">
+                </div>
+                <div class="form-group">
+                    <label for="suffix">File suffix</label>
+                    <input type="text" id="suffix" value="_fixed" autocomplete="off" spellcheck="false">
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="useDbnoStart">
+                        Use dbno start filter
+                    </label>
+                </div>
+                <div class="form-group" id="startDbnoGroup">
+                    <label for="startDbno">Start dbno</label>
+                    <input type="number" id="startDbno" value="6" min="0" inputmode="numeric">
+                </div>
+            </div>
+
+            <div class="switch-row">
+                <label>
+                    <input type="checkbox" id="onlyA" checked>
+                    <span>Only replace id/txt with A/a</span>
+                </label>
+                <label>
+                    <input type="checkbox" id="onlyMesspunkt">
+                    <span>Only type = Messpunkt</span>
+                </label>
+            </div>
+
+            <div id="runSummary" class="summary-box" aria-live="polite">Ready to preview.</div>
+
+            <div class="action-row">
+                <button id="previewBtn" type="button">Preview</button>
+                <button id="applyBtn" type="button">Replace</button>
+                <button id="downloadBtn" type="button" disabled>Download + Log</button>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Preview</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>dbno</th>
+                            <th>id</th>
+                            <th>txt</th>
+                            <th>new</th>
+                            <th>status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewBody">
+                        <tr><td colspan="5">No data.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Log</h2>
+            <div id="log" aria-live="polite"></div>
+        </section>
+    </main>
+
+    <script>
+const MAX_INPUT_FILE_SIZE_BYTES = 20 * 1024 * 1024;
+const SUPPORTED_EXTENSIONS = new Set(["etc", "xml", "txt"]);
+const LOG_MAX_LINES = 300;
+const SAFE_SUFFIX_PATTERN = /^[A-Za-z0-9._-]{0,40}$/;
+const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\x00-\x1F]/g;
+
+function getFileExtension(fileName) {
+    const parts = String(fileName || "").split(".");
+    return parts.length > 1 ? parts.pop().toLowerCase() : "";
+}
+
+function formatBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes < 0) return "0 B";
+    if (bytes < 1024) return `${bytes} B`;
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    return `${(kb / 1024).toFixed(1)} MB`;
+}
+
+function isSupportedFile(file) {
+    return !!file && SUPPORTED_EXTENSIONS.has(getFileExtension(file.name));
+}
+
+function isSafeOutputSuffix(value) {
+    return SAFE_SUFFIX_PATTERN.test(String(value || ""));
+}
+
+function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = event => resolve(String(event.target.result || ""));
+        reader.onerror = () => reject(reader.error || new Error("Read failed"));
+        reader.readAsText(file);
+    });
+}
+
+function makeDownloadName(fileName, suffix) {
+    const safeSuffix = isSafeOutputSuffix(suffix) ? String(suffix || "") : "_fixed";
+    const name = sanitizeDownloadFileName(fileName || "output.etc");
+    const dot = name.lastIndexOf(".");
+    if (dot <= 0) return `${name}${safeSuffix}`;
+    return `${name.slice(0, dot)}${safeSuffix}${name.slice(dot)}`;
+}
+
+function makeExportLogName(fileName, suffix) {
+    const outputName = makeDownloadName(fileName, suffix);
+    const dot = outputName.lastIndexOf(".");
+    const baseName = dot <= 0 ? outputName : outputName.slice(0, dot);
+    return `${baseName}_export-log.txt`;
+}
+
+function sanitizeDownloadFileName(fileName) {
+    const sanitized = String(fileName || "output.etc")
+        .replace(UNSAFE_FILENAME_CHARS, "_")
+        .replace(/\s+/g, " ")
+        .trim();
+    return sanitized || "output.etc";
+}
+
+function downloadText(content, fileName) {
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function getLogElement() {
+    return document.getElementById("log");
+}
+
+function enforceLogLimit(logEl) {
+    if (!logEl) return;
+    const maxNodes = LOG_MAX_LINES * 2 + 8;
+    while (logEl.childNodes.length > maxNodes) {
+        logEl.removeChild(logEl.firstChild);
+    }
+}
+
+function appendLog(message, className = "") {
+    const logEl = getLogElement();
+    if (!logEl) return;
+    const span = document.createElement("span");
+    span.textContent = String(message);
+    if (className) span.className = className;
+    logEl.appendChild(span);
+    logEl.appendChild(document.createTextNode("\n"));
+    enforceLogLimit(logEl);
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+function log(message) { appendLog(message); }
+function logOk(message) { appendLog(message, "log-ok"); }
+function logWarn(message) { appendLog(message, "log-warn"); }
+function logError(message) { appendLog(message, "log-error"); }
+function clearLog() {
+    const logEl = getLogElement();
+    if (logEl) logEl.textContent = "";
+}
+
+if (typeof module !== "undefined") {
+    module.exports = {
+        MAX_INPUT_FILE_SIZE_BYTES,
+        SUPPORTED_EXTENSIONS,
+        getFileExtension,
+        formatBytes,
+        isSupportedFile,
+        isSafeOutputSuffix,
+        sanitizeDownloadFileName,
+        makeDownloadName,
+        makeExportLogName
+    };
+}
+    </script>
+    <script>
+const MAX_REPLACEMENTS = 10000;
+const MAX_START_NUMBER_DIGITS = 32;
+const MAX_NUMBER_STEP = 1000000;
+
+function parseAttributes(tag) {
+    const attrs = {};
+    const attrRe = /([A-Za-z_:][\w:.-]*)\s*=\s*"([^"]*)"/g;
+    let match;
+    while ((match = attrRe.exec(tag)) !== null) {
+        attrs[match[1]] = match[2];
+    }
+    return attrs;
+}
+
+function replaceAttribute(tag, attrName, value) {
+    const escaped = attrName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(`(\\b${escaped}\\s*=\\s*")([^"]*)(")`);
+    if (!re.test(tag)) return tag;
+    return tag.replace(re, `$1${value}$3`);
+}
+
+function incrementDigitString(startValue, offset, step = 1) {
+    const raw = String(startValue || "").trim();
+    if (!/^\d+$/.test(raw)) return null;
+    const width = raw.length;
+    const next = BigInt(raw) + BigInt(offset) * BigInt(step);
+    if (next < 0n) return null;
+    const text = next.toString();
+    return text.length < width ? text.padStart(width, "0") : text;
+}
+
+function isAPlaceholder(value) {
+    return String(value ?? "").trim().toLowerCase() === "a";
+}
+
+function hasAPlaceholder(attrs) {
+    return isAPlaceholder(attrs.id) || isAPlaceholder(attrs.txt);
+}
+
+function parseStrictNonNegativeInteger(value) {
+    const raw = String(value ?? "").trim();
+    if (!/^\d+$/.test(raw)) return null;
+    const parsed = Number(raw);
+    if (!Number.isSafeInteger(parsed)) return null;
+    return parsed;
+}
+
+function parseStrictPositiveInteger(value) {
+    const parsed = parseStrictNonNegativeInteger(value);
+    if (parsed === null || parsed < 1) return null;
+    return parsed;
+}
+
+function readSettings(rawSettings) {
+    const mode = rawSettings.mode === "batch" ? "batch" : "single";
+    const useDbnoStart = mode === "single" || rawSettings.useDbnoStart === true;
+    const startDbno = useDbnoStart ? parseStrictNonNegativeInteger(rawSettings.startDbno) : null;
+    const quantity = mode === "batch" ? parseStrictPositiveInteger(rawSettings.quantity) : 1;
+    const numberStep = mode === "batch" ? parseStrictPositiveInteger(rawSettings.numberStep ?? 1) : 1;
+    const startNumber = String(rawSettings.startNumber || "").trim();
+
+    const errors = [];
+    if (useDbnoStart && startDbno === null) errors.push("dbno must be a non-negative whole number.");
+    if (!/^\d+$/.test(startNumber)) errors.push("Start number must contain digits only.");
+    if (startNumber.length > MAX_START_NUMBER_DIGITS) errors.push(`Start number must be at most ${MAX_START_NUMBER_DIGITS} digits.`);
+    if (quantity === null) errors.push("Quantity must be a positive whole number.");
+    if (quantity !== null && quantity > MAX_REPLACEMENTS) errors.push(`Quantity must not exceed ${MAX_REPLACEMENTS}.`);
+    if (numberStep === null) errors.push("Number step must be a positive whole number.");
+    if (numberStep !== null && numberStep > MAX_NUMBER_STEP) errors.push(`Number step must not exceed ${MAX_NUMBER_STEP}.`);
+
+    return {
+        mode,
+        useDbnoStart,
+        startDbno,
+        startNumber,
+        quantity,
+        numberStep,
+        onlyA: rawSettings.onlyA !== false,
+        onlyMesspunkt: rawSettings.onlyMesspunkt !== false,
+        errors
+    };
+}
+
+function getEquipmentStats(text) {
+    const tags = String(text || "").match(/<ELECTRICALEQUIPMENT\b[^>]*>/g) || [];
+    let messpunkt = 0;
+    let placeholders = 0;
+    let messpunktPlaceholders = 0;
+    for (const tag of tags) {
+        const attrs = parseAttributes(tag);
+        if (attrs.type === "Messpunkt") messpunkt++;
+        if (hasAPlaceholder(attrs)) {
+            placeholders++;
+            if (attrs.type === "Messpunkt") messpunktPlaceholders++;
+        }
+    }
+    return {
+        total: tags.length,
+        messpunkt,
+        placeholders,
+        messpunktPlaceholders
+    };
+}
+
+function shouldConsiderTag(attrs, settings) {
+    if (settings.onlyMesspunkt && attrs.type !== "Messpunkt") {
+        return { ok: false, reason: "not Messpunkt" };
+    }
+    if (attrs.id === undefined || attrs.txt === undefined) {
+        return { ok: false, reason: "missing id/txt" };
+    }
+    if (settings.onlyA && !hasAPlaceholder(attrs)) {
+        return { ok: false, reason: "id/txt has no A placeholder" };
+    }
+    if (settings.useDbnoStart && attrs.dbno === undefined) {
+        return { ok: false, reason: "missing dbno" };
+    }
+
+    const dbno = attrs.dbno === undefined ? null : parseStrictNonNegativeInteger(attrs.dbno);
+    if (settings.useDbnoStart && dbno === null) {
+        return { ok: false, reason: "dbno is not a whole number" };
+    }
+
+    if (settings.mode === "single" && dbno !== settings.startDbno) {
+        return { ok: false, reason: "different dbno" };
+    }
+    if (settings.mode === "batch" && settings.useDbnoStart && dbno < settings.startDbno) {
+        return { ok: false, reason: "before start" };
+    }
+    return { ok: true, dbno };
+}
+
+function buildPlan(text, rawSettings) {
+    const settings = readSettings(rawSettings);
+    if (settings.errors.length > 0) {
+        return { settings, rows: [], replacements: [], warnings: [], errors: settings.errors };
+    }
+
+    const rows = [];
+    const replacements = [];
+    const warnings = [];
+    const tagRe = /<ELECTRICALEQUIPMENT\b[^>]*>/g;
+    let match;
+    let accepted = 0;
+
+    while ((match = tagRe.exec(String(text || ""))) !== null) {
+        if (settings.mode === "batch" && accepted >= settings.quantity) break;
+
+        const tag = match[0];
+        const attrs = parseAttributes(tag);
+        const candidate = shouldConsiderTag(attrs, settings);
+        if (!candidate.ok) continue;
+
+        const newValue = incrementDigitString(settings.startNumber, accepted, settings.numberStep);
+        const row = {
+            dbno: attrs.dbno || "",
+            oldId: attrs.id || "",
+            oldTxt: attrs.txt || "",
+            newValue,
+            status: "will be replaced",
+            ok: true
+        };
+        rows.push(row);
+
+        let nextTag = replaceAttribute(tag, "id", newValue);
+        nextTag = replaceAttribute(nextTag, "txt", newValue);
+        replacements.push({
+            start: match.index,
+            end: match.index + tag.length,
+            oldTag: tag,
+            newTag: nextTag,
+            row
+        });
+        accepted++;
+    }
+
+    if (settings.mode === "batch" && replacements.length > 0 && replacements.length < settings.quantity) {
+        warnings.push(`Only ${replacements.length} matching equipment tags were found for the requested quantity ${settings.quantity}.`);
+    }
+
+    if (rows.length === 0) {
+        rows.push({
+            dbno: "-",
+            oldId: "-",
+            oldTxt: "-",
+            newValue: "-",
+            status: "no matches",
+            ok: false
+        });
+    }
+
+    return { settings, rows, replacements, warnings, errors: [] };
+}
+
+function applyPlan(text, rawSettings) {
+    const plan = buildPlan(text, rawSettings);
+    if (plan.errors.length > 0 || plan.replacements.length === 0) {
+        return {
+            content: text,
+            modified: false,
+            count: 0,
+            plan
+        };
+    }
+
+    let output = String(text || "");
+    for (let i = plan.replacements.length - 1; i >= 0; i--) {
+        const replacement = plan.replacements[i];
+        output = output.slice(0, replacement.start) + replacement.newTag + output.slice(replacement.end);
+    }
+
+    return {
+        content: output,
+        modified: output !== text,
+        count: plan.replacements.length,
+        plan
+    };
+}
+
+function cleanExportLogValue(value) {
+    return String(value ?? "").replace(/[\r\n\t]+/g, " ").trim();
+}
+
+function formatExportLogBoolean(value) {
+    return value ? "yes" : "no";
+}
+
+function buildExportLog(details = {}) {
+    const plan = details.plan || {};
+    const settings = plan.settings || details.settings || {};
+    const replacements = Array.isArray(plan.replacements) ? plan.replacements : [];
+    const warnings = Array.isArray(plan.warnings) ? plan.warnings : [];
+    const errors = Array.isArray(plan.errors) ? plan.errors : [];
+    const exportedAt = cleanExportLogValue(details.exportedAt || new Date().toISOString());
+    const sourceFileName = cleanExportLogValue(details.sourceFileName || "-");
+    const outputFileName = cleanExportLogValue(details.outputFileName || "-");
+    const startDbno = settings.useDbnoStart ? cleanExportLogValue(settings.startDbno) : "-";
+
+    const lines = [
+        "ETC Equipment ID Fixer Export Log",
+        `Exported at: ${exportedAt}`,
+        `Source file: ${sourceFileName || "-"}`,
+        `Output file: ${outputFileName || "-"}`,
+        "",
+        "Settings",
+        `Mode: ${cleanExportLogValue(settings.mode || "batch")}`,
+        `Start number: ${cleanExportLogValue(settings.startNumber)}`,
+        `Number step: ${cleanExportLogValue(settings.numberStep)}`,
+        `Quantity requested: ${cleanExportLogValue(settings.quantity)}`,
+        `Use dbno start filter: ${formatExportLogBoolean(settings.useDbnoStart)}`,
+        `Start dbno: ${startDbno}`,
+        `Only replace id/txt with A/a: ${formatExportLogBoolean(settings.onlyA)}`,
+        `Only type = Messpunkt: ${formatExportLogBoolean(settings.onlyMesspunkt)}`,
+        "",
+        "Replacements",
+        `Count: ${replacements.length}`
+    ];
+
+    if (replacements.length > 0) {
+        lines.push("");
+        lines.push(["#", "dbno", "old id", "old txt", "new id", "new txt"].join("\t"));
+        replacements.forEach((replacement, index) => {
+            const row = replacement.row || {};
+            const newValue = cleanExportLogValue(row.newValue);
+            lines.push([
+                index + 1,
+                cleanExportLogValue(row.dbno),
+                cleanExportLogValue(row.oldId),
+                cleanExportLogValue(row.oldTxt),
+                newValue,
+                newValue
+            ].join("\t"));
+        });
+    }
+
+    if (warnings.length > 0) {
+        lines.push("");
+        lines.push("Warnings");
+        warnings.forEach((warning, index) => {
+            lines.push(`${index + 1}. ${cleanExportLogValue(warning)}`);
+        });
+    }
+
+    if (errors.length > 0) {
+        lines.push("");
+        lines.push("Errors");
+        errors.forEach((error, index) => {
+            lines.push(`${index + 1}. ${cleanExportLogValue(error)}`);
+        });
+    }
+
+    return `${lines.join("\n")}\n`;
+}
+
+if (typeof module !== "undefined") {
+    module.exports = {
+        parseAttributes,
+        replaceAttribute,
+        incrementDigitString,
+        isAPlaceholder,
+        hasAPlaceholder,
+        parseStrictNonNegativeInteger,
+        parseStrictPositiveInteger,
+        readSettings,
+        getEquipmentStats,
+        buildPlan,
+        applyPlan,
+        buildExportLog
+    };
+}
+    </script>
+    <script>
+let loadedFile = null;
+let originalContent = "";
+let currentContent = "";
+let lastPlan = null;
+let lastAppliedPlan = null;
+let hasChanges = false;
+
+function byId(id) {
+    return document.getElementById(id);
+}
+
+function currentMode() {
+    return "batch";
+}
+
+function getSuffix() {
+    return byId("suffix").value;
+}
+
+function validateOutputSuffix() {
+    if (!isSafeOutputSuffix(getSuffix())) {
+        logError("File suffix may contain only letters, numbers, dots, underscores, and hyphens, up to 40 characters.");
+        renderRunSummary("Check the file suffix.");
+        return false;
+    }
+    return true;
+}
+
+function getSettings() {
+    return {
+        mode: "batch",
+        startDbno: byId("startDbno").value,
+        useDbnoStart: byId("useDbnoStart").checked,
+        startNumber: byId("startNumber").value,
+        quantity: byId("quantity").value,
+        numberStep: byId("numberStep").value,
+        onlyA: byId("onlyA").checked,
+        onlyMesspunkt: byId("onlyMesspunkt").checked
+    };
+}
+
+function setBusy(isBusy) {
+    ["fileInput", "previewBtn", "applyBtn", "downloadBtn"].forEach(id => {
+        const el = byId(id);
+        if (el) el.disabled = isBusy || (id === "downloadBtn" && !hasChanges);
+    });
+}
+
+function updateModeUi() {
+    const useFilter = byId("useDbnoStart").checked;
+    byId("startDbno").disabled = !useFilter;
+    byId("startDbnoGroup").classList.toggle("hidden", !useFilter);
+}
+
+function renderFileSummary() {
+    const summary = byId("fileSummary");
+    if (!loadedFile) {
+        summary.textContent = "No file selected.";
+        return;
+    }
+    const stats = getEquipmentStats(originalContent);
+    summary.textContent = `${loadedFile.name} | ${formatBytes(loadedFile.size)} | ELECTRICALEQUIPMENT: ${stats.total} | Messpunkt: ${stats.messpunkt} | A/a placeholders: ${stats.placeholders} | Messpunkt A/a: ${stats.messpunktPlaceholders}`;
+}
+
+function renderRunSummary(text) {
+    byId("runSummary").textContent = text;
+}
+
+function renderPreview(rows) {
+    const body = byId("previewBody");
+    body.textContent = "";
+    for (const row of rows.slice(0, 80)) {
+        const tr = document.createElement("tr");
+        const statusClass = row.ok ? "status-ok" : "status-warn";
+        [row.dbno, row.oldId, row.oldTxt, row.newValue, row.status].forEach((value, index) => {
+            const td = document.createElement("td");
+            td.textContent = value;
+            if (index === 4) td.className = statusClass;
+            tr.appendChild(td);
+        });
+        body.appendChild(tr);
+    }
+    if (rows.length > 80) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 5;
+        td.textContent = `Showing 80 of ${rows.length}.`;
+        tr.appendChild(td);
+        body.appendChild(tr);
+    }
+}
+
+async function handleFileSelect(event) {
+    const file = event.target.files && event.target.files[0];
+    clearLog();
+    lastPlan = null;
+    lastAppliedPlan = null;
+    hasChanges = false;
+    currentContent = "";
+    originalContent = "";
+    loadedFile = null;
+    byId("downloadBtn").disabled = true;
+
+    if (!file) {
+        renderFileSummary();
+        renderRunSummary("No file selected.");
+        return;
+    }
+    if (!isSupportedFile(file)) {
+        logError(`Unsupported file extension: ${file.name}`);
+        renderRunSummary("File rejected.");
+        return;
+    }
+    if (file.size > MAX_INPUT_FILE_SIZE_BYTES) {
+        logError(`File is too large: ${formatBytes(file.size)}.`);
+        renderRunSummary("File rejected.");
+        return;
+    }
+
+    setBusy(true);
+    try {
+        originalContent = await readFileAsText(file);
+        currentContent = originalContent;
+        loadedFile = file;
+        syncQuantityWithDetectedPlaceholders();
+        renderFileSummary();
+        renderRunSummary("File loaded.");
+        logOk(`Loaded ${file.name}`);
+    } catch (error) {
+        logError(`Read error: ${error.message || error}`);
+        renderRunSummary("Read error.");
+    } finally {
+        setBusy(false);
+    }
+}
+
+function syncQuantityWithDetectedPlaceholders() {
+    if (!currentContent) return;
+    const stats = getEquipmentStats(currentContent);
+    const detected = byId("onlyMesspunkt").checked ? stats.messpunktPlaceholders : stats.placeholders;
+    if (detected > 0) byId("quantity").value = String(detected);
+}
+
+function previewChanges() {
+    if (!loadedFile) {
+        logWarn("Select a file first.");
+        return;
+    }
+    if (!validateOutputSuffix()) return;
+
+    const plan = buildPlan(currentContent, getSettings());
+    lastPlan = plan;
+    if (plan.errors.length > 0) {
+        renderPreview(plan.errors.map(message => ({
+            dbno: "-",
+            oldId: "-",
+            oldTxt: "-",
+            newValue: "-",
+            status: message,
+            ok: false
+        })));
+        renderRunSummary("Check the fields.");
+        plan.errors.forEach(logError);
+        return;
+    }
+
+    renderPreview(plan.rows);
+    renderRunSummary(`Replacements found: ${plan.replacements.length}.`);
+    if (plan.replacements.length > 0) {
+        logOk(`Preview: ${plan.replacements.length} replacements.`);
+        plan.warnings.forEach(logWarn);
+    } else {
+        logWarn("Preview: no replacements.");
+    }
+}
+
+function applyChanges() {
+    if (!loadedFile) {
+        logWarn("Select a file first.");
+        return;
+    }
+    if (!validateOutputSuffix()) return;
+
+    const result = applyPlan(currentContent, getSettings());
+    lastPlan = result.plan;
+    renderPreview(result.plan.rows);
+
+    if (result.plan.errors.length > 0) {
+        renderRunSummary("Check the fields.");
+        result.plan.errors.forEach(logError);
+        return;
+    }
+
+    if (!result.modified) {
+        renderRunSummary("No changes.");
+        logWarn("Replacement was not applied: no matches.");
+        return;
+    }
+
+    currentContent = result.content;
+    lastAppliedPlan = result.plan;
+    hasChanges = true;
+    byId("downloadBtn").disabled = false;
+    renderRunSummary(`Done: ${result.count} replacements.`);
+    logOk(`Replaced: ${result.count}`);
+    result.plan.warnings.forEach(logWarn);
+    for (const replacement of result.plan.replacements) {
+        log(`dbno ${replacement.row.dbno}: ${replacement.row.oldId}/${replacement.row.oldTxt} -> ${replacement.row.newValue}`);
+    }
+}
+
+function downloadCurrentFile() {
+    if (!loadedFile || !currentContent) {
+        logWarn("No file to download.");
+        return;
+    }
+    if (!validateOutputSuffix()) return;
+
+    const suffix = getSuffix();
+    const outputName = makeDownloadName(loadedFile.name, suffix);
+    const exportLogName = makeExportLogName(loadedFile.name, suffix);
+    const exportLog = buildExportLog({
+        exportedAt: new Date().toISOString(),
+        sourceFileName: loadedFile.name,
+        outputFileName: outputName,
+        plan: lastAppliedPlan || lastPlan
+    });
+
+    downloadText(currentContent, outputName);
+    downloadText(exportLog, exportLogName);
+    logOk(`File and export log downloads started: ${outputName}, ${exportLogName}`);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    byId("fileInput").addEventListener("change", handleFileSelect);
+    byId("previewBtn").addEventListener("click", previewChanges);
+    byId("applyBtn").addEventListener("click", applyChanges);
+    byId("downloadBtn").addEventListener("click", downloadCurrentFile);
+    byId("onlyMesspunkt").addEventListener("change", syncQuantityWithDetectedPlaceholders);
+    byId("useDbnoStart").addEventListener("change", updateModeUi);
+    updateModeUi();
+    renderFileSummary();
+});
+    </script>
+</body>
+</html>

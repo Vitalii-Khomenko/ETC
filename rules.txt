@@ -1,0 +1,65 @@
+Project Development and Publishing Guidelines for ETC Equipment ID Fixer
+
+## 1. Code Standards
+   - All code comments must be in English.
+   - Keep the browser app client-side only unless a task explicitly changes that architecture.
+   - Keep the single-file and split-file implementations behaviorally aligned.
+   - Maintain clean, readable code structure.
+   - Avoid unrelated refactors during field-fix updates.
+
+## 2. Interface Requirements
+   - Keep the UI touch-friendly for smartphone field usage.
+   - Preserve readable labels, validation messages, and logging.
+   - Test mobile browser usability after layout changes.
+   - Keep all user-facing text in English.
+
+## 3. Replacement Rules
+   - Change only opening `ELECTRICALEQUIPMENT` tags.
+   - Update both `id` and `txt` to the same target value.
+   - Start with the configured number and increment by the configured number step for each accepted replacement.
+   - Start from the first matching `A` by default.
+   - Apply a dbno start point only when the explicit dbno filter is enabled.
+   - Respect the requested quantity in range mode.
+   - Auto-fill the range quantity from the detected `A`/`a` placeholder count when a file is loaded.
+   - Preserve source file formatting outside the edited attributes.
+   - Keep the placeholder safety default enabled: only tags where `id` or `txt` is `A`/`a` are changed.
+   - When a tag is accepted, update both `id` and `txt` to the same generated number.
+   - Reject mixed numeric input instead of relying on permissive parsing.
+   - Keep replacement quantity capped for mobile safety.
+   - Do not partially rewrite tags that lack either `id` or `txt`.
+
+## 4. Documentation Standards
+   - README.md, AGENTS.md, rules.txt, and VALIDATION.md must be in English.
+   - Document supported formats and safety behavior.
+   - Update documentation when replacement behavior changes.
+
+## 5. Repository Management
+   - Use .gitignore to exclude generated local files and development-only artifacts when this project becomes a repository.
+   - Publish essential project files, documentation, validation tests, and license files.
+   - Run validation tests after each functional update.
+   - Keep commit messages descriptive and in English.
+
+## 6. Quality Assurance
+   - Run `python tests/run_validation.py` after functional changes.
+   - Add regression cases for every field bug that changes replacement logic.
+   - Test both split and single-file builds after UI or logic changes.
+
+## 7. Project Structure
+   ```
+   index.html                       # Split-version HTML shell
+   css/style.css                    # Mobile-first styles
+   js/utils.js                      # Shared helpers and logging
+   js/etc-fixer.js                  # Replacement engine
+   js/main.js                       # UI orchestration and export
+   scripts/build_singlefile_dist.py # Single-file mobile build script
+   tests/run_validation.py          # Regression validation suite
+   templates/3-template-all-a.etc    # Local generated template from 3.etc
+   dist/ETC-Equipment-ID-Fixer.html # Generated single-file mobile app
+   AGENTS.md                        # Agent instructions
+   rules.txt                        # Development and publishing rules
+   LICENSE                          # MIT license
+   VALIDATION.md                    # Validation notes
+   SECURITY.md                      # Security and privacy notes
+   ```
+
+Last updated: 2026-05-24

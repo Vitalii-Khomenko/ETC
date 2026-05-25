@@ -1,0 +1,30 @@
+# Project Instructions
+
+## Language Policy
+
+Use English only throughout this project.
+
+This applies to:
+
+- User-facing UI text.
+- Browser alerts, prompts, buttons, labels, and validation messages.
+- Documentation and README files.
+- Code comments and inline developer notes.
+- Script output and command-line prompts.
+- Commit messages, pull request titles, pull request descriptions, and issue text.
+- Generated example data, unless the ETC/XML input sample explicitly requires another language.
+
+Do not add Russian or any other non-English text to project files.
+
+## Development Notes
+
+- Keep the app usable as a local browser-based ETC equipment ID fixer unless a task explicitly introduces a backend.
+- Keep `dist/ETC-Equipment-ID-Fixer.html` self-contained for mobile field use.
+- Keep the split version in `index.html`, `css/`, and `js/` aligned with the single-file version after logic changes.
+- Preserve source file formatting around `ELECTRICALEQUIPMENT` tags.
+- Preserve the placeholder safety default: change only tags where `id` or `txt` is `A`/`a` unless the user changes options.
+- Keep numbering deterministic: start at the selected number and increment by the selected number step for each accepted replacement.
+- Start from the first matching `A` by default; use dbno only when the explicit filter is enabled.
+- Update project documentation after each functional change.
+- Run `python tests/run_validation.py` after every functional update.
+- Keep comments and developer notes concise, accurate, and in English.

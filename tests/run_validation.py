@@ -1,0 +1,350 @@
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SOURCE_ETC_PATH = ROOT / "3.etc"
+TEMPLATE_PATH = ROOT / "templates" / "3-template-all-a.etc"
+
+
+def run_node_case() -> dict:
+    script = r"""
+const fixer = require('./js/etc-fixer.js');
+const utils = require('./js/utils.js');
+const text = [
+  '<ROOT>',
+  '  <ELECTRICALEQUIPMENT dbno="6" id="A" txt="A" type="Messpunkt" />',
+  '  <ELECTRICALEQUIPMENT dbno="7" id="A" txt="A" type="Messpunkt" />',
+  '  <ELECTRICALEQUIPMENT dbno="8" id="3313617" txt="3313617" type="Messpunkt" />',
+  '</ROOT>'
+].join('\n');
+const earlierA = [
+  '<ROOT>',
+  '  <ELECTRICALEQUIPMENT dbno="1" id="A" txt="A" type="Messpunkt" />',
+  '  <ELECTRICALEQUIPMENT dbno="6" id="A" txt="A" type="Messpunkt" />',
+  '</ROOT>'
+].join('\n');
+const mixedCaseAndSingleSide = [
+  '<ROOT>',
+  '  <ELECTRICALEQUIPMENT dbno="1" id="a" txt="a" type="Messpunkt" />',
+  '  <ELECTRICALEQUIPMENT dbno="2" id="A" txt="3313616" type="Messpunkt" />',
+  '  <ELECTRICALEQUIPMENT dbno="3" id="3313617" txt="a" type="Messpunkt" />',
+  '  <ELECTRICALEQUIPMENT dbno="4" id="3313618" txt="3313618" type="Messpunkt" />',
+  '</ROOT>'
+].join('\n');
+const hundredRows = ['<ROOT>'];
+for (let i = 0; i < 105; i++) {
+  hundredRows.push(`  <ELECTRICALEQUIPMENT dbno="${6 + i}" id="A" txt="A" type="Messpunkt" />`);
+}
+hundredRows.push('</ROOT>');
+const single = fixer.applyPlan(text, {
+  mode: 'single',
+  startDbno: '6',
+  startNumber: '3313615',
+  quantity: '1',
+  onlyA: true,
+  onlyMesspunkt: true
+});
+const batch = fixer.applyPlan(text, {
+  mode: 'batch',
+  startDbno: '',
+  useDbnoStart: false,
+  startNumber: '3313615',
+  quantity: '2',
+  onlyA: true,
+  onlyMesspunkt: true
+});
+const hundred = fixer.applyPlan(hundredRows.join('\n'), {
+  mode: 'batch',
+  startDbno: '',
+  useDbnoStart: false,
+  startNumber: '55667788',
+  quantity: '100',
+  numberStep: '1',
+  onlyA: true,
+  onlyMesspunkt: false
+});
+const stepTwo = fixer.applyPlan(hundredRows.join('\n'), {
+  mode: 'batch',
+  startDbno: '',
+  useDbnoStart: false,
+  startNumber: '55667788',
+  quantity: '3',
+  numberStep: '2',
+  onlyA: true,
+  onlyMesspunkt: false
+});
+const defaultFirstA = fixer.applyPlan(earlierA, {
+  mode: 'batch',
+  startDbno: '6',
+  useDbnoStart: false,
+  startNumber: '55667788',
+  quantity: '2',
+  numberStep: '1',
+  onlyA: true,
+  onlyMesspunkt: false
+});
+const filteredFirstA = fixer.applyPlan(earlierA, {
+  mode: 'batch',
+  startDbno: '6',
+  useDbnoStart: true,
+  startNumber: '55667788',
+  quantity: '2',
+  numberStep: '1',
+  onlyA: true,
+  onlyMesspunkt: false
+});
+const mixed = fixer.applyPlan(mixedCaseAndSingleSide, {
+  mode: 'batch',
+  startDbno: '',
+  useDbnoStart: false,
+  startNumber: '55667788',
+  quantity: '4',
+  numberStep: '1',
+  onlyA: true,
+  onlyMesspunkt: false
+});
+const mixedStats = fixer.getEquipmentStats(mixedCaseAndSingleSide);
+const exportLogName = utils.makeExportLogName('3-template-all-a.etc', '_fixed');
+const exportLog = fixer.buildExportLog({
+  exportedAt: '2026-05-24T12:34:56.000Z',
+  sourceFileName: '3-template-all-a.etc',
+  outputFileName: utils.makeDownloadName('3-template-all-a.etc', '_fixed'),
+  plan: mixed.plan
+});
+console.log(JSON.stringify({
+  singleCount: single.count,
+  singleHas6: single.content.includes('dbno="6" id="3313615" txt="3313615"'),
+  singleLeaves7: single.content.includes('dbno="7" id="A" txt="A"'),
+  batchCount: batch.count,
+  batchHas6: batch.content.includes('dbno="6" id="3313615" txt="3313615"'),
+  batchHas7: batch.content.includes('dbno="7" id="3313616" txt="3313616"'),
+  batchLeaves8: batch.content.includes('dbno="8" id="3313617" txt="3313617"'),
+  hundredCount: hundred.count,
+  hundredFirst: hundred.content.includes('dbno="6" id="55667788" txt="55667788"'),
+  hundredLast: hundred.content.includes('dbno="105" id="55667887" txt="55667887"'),
+  hundredLimit: hundred.content.includes('dbno="106" id="A" txt="A"'),
+  stepTwoMiddle: stepTwo.content.includes('dbno="7" id="55667790" txt="55667790"'),
+  stepTwoLast: stepTwo.content.includes('dbno="8" id="55667792" txt="55667792"'),
+  defaultStartsAtFirstA: defaultFirstA.content.includes('dbno="1" id="55667788" txt="55667788"'),
+  filterStartsAtDbno: filteredFirstA.content.includes('dbno="1" id="A" txt="A"') && filteredFirstA.content.includes('dbno="6" id="55667788" txt="55667788"'),
+  mixedCount: mixed.count,
+  mixedStatsPlaceholders: mixedStats.placeholders,
+  mixedLowercase: mixed.content.includes('dbno="1" id="55667788" txt="55667788"'),
+  mixedIdOnly: mixed.content.includes('dbno="2" id="55667789" txt="55667789"'),
+  mixedTxtOnly: mixed.content.includes('dbno="3" id="55667790" txt="55667790"'),
+  mixedKeepsNumeric: mixed.content.includes('dbno="4" id="3313618" txt="3313618"'),
+  exportLogName,
+  exportLogHasHeader: exportLog.includes('ETC Equipment ID Fixer Export Log'),
+  exportLogHasDate: exportLog.includes('Exported at: 2026-05-24T12:34:56.000Z'),
+  exportLogHasSource: exportLog.includes('Source file: 3-template-all-a.etc'),
+  exportLogHasOutput: exportLog.includes('Output file: 3-template-all-a_fixed.etc'),
+  exportLogHasCount: exportLog.includes('Count: 3'),
+  exportLogHasOneSidedChange: exportLog.includes('2\t2\tA\t3313616\t55667789\t55667789')
+}));
+"""
+    completed = subprocess.run(
+        ["node", "-e", script],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    return json.loads(completed.stdout)
+
+
+def run_template_case() -> dict:
+    if not SOURCE_ETC_PATH.exists():
+        return {"skipped": True}
+
+    subprocess.run([sys.executable, "scripts/create_template_from_3.py"], cwd=ROOT, check=True)
+    script = r"""
+const fs = require('fs');
+const fixer = require('./js/etc-fixer.js');
+const templatePath = process.argv[1];
+const outputPath = './tests/generated/3-template-all-a-fixed.etc';
+const text = fs.readFileSync(templatePath, 'utf8');
+const statsBefore = fixer.getEquipmentStats(text);
+const result = fixer.applyPlan(text, {
+  mode: 'batch',
+  startDbno: '',
+  useDbnoStart: false,
+  startNumber: '55667788',
+  quantity: '100',
+  numberStep: '1',
+  onlyA: true,
+  onlyMesspunkt: false
+});
+fs.mkdirSync('./tests/generated', { recursive: true });
+fs.writeFileSync(outputPath, result.content, 'utf8');
+const statsAfter = fixer.getEquipmentStats(result.content);
+console.log(JSON.stringify({
+  exists: fs.existsSync(templatePath),
+  outputExists: fs.existsSync(outputPath),
+  beforeTotal: statsBefore.total,
+  beforeMesspunkt: statsBefore.messpunkt,
+  beforePlaceholders: statsBefore.placeholders,
+  replacementCount: result.count,
+  warningCount: result.plan.warnings.length,
+  firstUpdated: result.content.includes('dbno="6" id="55667788" txt="55667788"'),
+  lastUpdated: result.content.includes('dbno="58" id="55667840" txt="55667840"'),
+  afterPlaceholders: statsAfter.placeholders
+}));
+"""
+    completed = subprocess.run(
+        ["node", "-e", script, str(TEMPLATE_PATH)],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    return json.loads(completed.stdout)
+
+
+def run_security_case() -> dict:
+    script = r"""
+const fixer = require('./js/etc-fixer.js');
+const utils = require('./js/utils.js');
+const malformed = [
+  '<ROOT>',
+  '  <ELECTRICALEQUIPMENT dbno="6abc" id="A" txt="A" type="Messpunkt" />',
+  '  <ELECTRICALEQUIPMENT dbno="7" id="A" type="Messpunkt" />',
+  '</ROOT>'
+].join('\n');
+const missingTxtOnly = [
+  '<ROOT>',
+  '  <ELECTRICALEQUIPMENT dbno="7" id="A" type="Messpunkt" />',
+  '</ROOT>'
+].join('\n');
+const badDbno = fixer.buildPlan(malformed, {
+  mode: 'single',
+  startDbno: '6abc',
+  startNumber: '55667788',
+  quantity: '1',
+  onlyA: true,
+  onlyMesspunkt: true
+});
+const tooMany = fixer.buildPlan(malformed, {
+  mode: 'batch',
+  startDbno: '',
+  useDbnoStart: false,
+  startNumber: '55667788',
+  quantity: '10001',
+  numberStep: '1',
+  onlyA: true,
+  onlyMesspunkt: true
+});
+const missingTxt = fixer.applyPlan(missingTxtOnly, {
+  mode: 'batch',
+  startDbno: '',
+  useDbnoStart: false,
+  startNumber: '55667788',
+  quantity: '10',
+  numberStep: '1',
+  onlyA: false,
+  onlyMesspunkt: true
+});
+console.log(JSON.stringify({
+  badDbnoRejected: badDbno.errors.length > 0,
+  tooManyRejected: tooMany.errors.length > 0,
+  badStepRejected: fixer.buildPlan(malformed, {
+    mode: 'batch',
+    startDbno: '',
+    useDbnoStart: false,
+    startNumber: '55667788',
+    quantity: '10',
+    numberStep: '0',
+    onlyA: true,
+    onlyMesspunkt: true
+  }).errors.length > 0,
+  missingTxtNotChanged: missingTxt.count === 0,
+  unsafeSuffixRejected: !utils.isSafeOutputSuffix('../bad'),
+  safeSuffixAccepted: utils.isSafeOutputSuffix('_fixed-01'),
+  sanitizedName: utils.sanitizeDownloadFileName('..\\\\bad:name.etc')
+}));
+"""
+    completed = subprocess.run(
+        ["node", "-e", script],
+        cwd=ROOT,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+    return json.loads(completed.stdout)
+
+
+def assert_true(value: bool, message: str) -> None:
+    if not value:
+        raise AssertionError(message)
+
+
+def main() -> None:
+    result = run_node_case()
+    assert_true(result["singleCount"] == 1, "single mode should replace one tag")
+    assert_true(result["singleHas6"], "single mode should update dbno 6")
+    assert_true(result["singleLeaves7"], "single mode should leave dbno 7")
+    assert_true(result["batchCount"] == 2, "batch mode should replace two tags")
+    assert_true(result["batchHas6"], "batch mode should update first tag")
+    assert_true(result["batchHas7"], "batch mode should increment second tag")
+    assert_true(result["batchLeaves8"], "batch mode should not overwrite existing numeric id when onlyA is enabled")
+    assert_true(result["hundredCount"] == 100, "range mode should replace exactly 100 tags")
+    assert_true(result["hundredFirst"], "replacement should start at 55667788")
+    assert_true(result["hundredLast"], "replacement should end at 55667887 for 100 replacements")
+    assert_true(result["hundredLimit"], "range mode should leave the 101st matching tag unchanged")
+    assert_true(result["stepTwoMiddle"], "number step should control the second generated number")
+    assert_true(result["stepTwoLast"], "number step should control the third generated number")
+    assert_true(result["defaultStartsAtFirstA"], "range mode should start at the first matching A by default")
+    assert_true(result["filterStartsAtDbno"], "dbno filtering should only apply when explicitly enabled")
+    assert_true(result["mixedCount"] == 3, "placeholder detection should accept lowercase and one-sided A values")
+    assert_true(result["mixedStatsPlaceholders"] == 3, "stats should count lowercase and one-sided A placeholders")
+    assert_true(result["mixedLowercase"], "lowercase a/a should be replaced")
+    assert_true(result["mixedIdOnly"], "id-only A should still rewrite id and txt")
+    assert_true(result["mixedTxtOnly"], "txt-only a should still rewrite id and txt")
+    assert_true(result["mixedKeepsNumeric"], "fully numeric id/txt should remain unchanged")
+    assert_true(result["exportLogName"] == "3-template-all-a_fixed_export-log.txt", "export log file name should match the exported ETC name")
+    assert_true(result["exportLogHasHeader"], "export log should include a stable header")
+    assert_true(result["exportLogHasDate"], "export log should include the export timestamp")
+    assert_true(result["exportLogHasSource"], "export log should include the source file name")
+    assert_true(result["exportLogHasOutput"], "export log should include the output file name")
+    assert_true(result["exportLogHasCount"], "export log should include the replacement count")
+    assert_true(result["exportLogHasOneSidedChange"], "export log should include old and new id/txt values")
+
+    security = run_security_case()
+    assert_true(security["badDbnoRejected"], "strict dbno parsing should reject mixed input")
+    assert_true(security["tooManyRejected"], "quantity limit should reject oversized runs")
+    assert_true(security["badStepRejected"], "number step validation should reject non-positive values")
+    assert_true(security["missingTxtNotChanged"], "tags without both id and txt should not be partially changed")
+    assert_true(security["unsafeSuffixRejected"], "unsafe suffixes should be rejected")
+    assert_true(security["safeSuffixAccepted"], "safe suffixes should be accepted")
+    assert_true("\\" not in security["sanitizedName"], "download file names should be sanitized")
+
+    template = run_template_case()
+    if template.get("skipped"):
+        print("Skipped local 3.etc template validation because 3.etc is not present")
+    else:
+        assert_true(template["exists"], "template file should be generated")
+        assert_true(template["outputExists"], "template output file should be generated")
+        assert_true(template["beforeTotal"] == 58, "template should preserve the equipment tag count")
+        assert_true(template["beforeMesspunkt"] == 53, "template should preserve the Messpunkt tag count")
+        assert_true(template["beforePlaceholders"] == 53, "template should set all Messpunkt ids to A")
+        assert_true(template["replacementCount"] == 53, "real template run should replace all available Messpunkt placeholders")
+        assert_true(template["warningCount"] == 1, "real template run should warn when requested quantity exceeds available tags")
+        assert_true(template["firstUpdated"], "real template run should update dbno 6 to the start number")
+        assert_true(template["lastUpdated"], "real template run should increment through dbno 58")
+        assert_true(template["afterPlaceholders"] == 0, "real template run should remove all Messpunkt placeholders")
+
+    subprocess.run([sys.executable, "scripts/build_singlefile_dist.py"], cwd=ROOT, check=True)
+    output = ROOT / "dist" / "ETC-Equipment-ID-Fixer.html"
+    assert_true(output.exists(), "single-file build should exist")
+    html = output.read_text(encoding="utf-8")
+    assert_true("<script src=" not in html, "single-file build should inline scripts")
+    assert_true("<link rel=\"stylesheet\"" not in html, "single-file build should inline CSS")
+    print("Validation passed")
+
+
+if __name__ == "__main__":
+    main()
