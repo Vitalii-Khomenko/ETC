@@ -32,6 +32,8 @@ python scripts/run_privacy_gate.py
 | Split section ranges | A section can be split into multiple numbering groups with fixed counts and a blank final count for remaining matches. |
 | Compact group editor | Group counts are entered on each section row, and group fields render below the section without browser spinner controls. |
 | Machine diagram | The diagram data groups shown equipment by machine and CIRCUIT section and displays one-sided placeholder values such as `A / 3313616`. |
+| Diagram disclosure | Machine and section lists render as collapsible disclosures; inactive lists are collapsed by default. |
+| Replaced-number highlight | Numbers changed by the last replacement plan are highlighted in green in the machine diagram. |
 | Safety filter | Existing numeric IDs are not overwritten while `Only replace id/txt with A/a` is enabled and neither attribute is `A`/`a`. |
 | Strict input parsing | Mixed numeric text such as `6abc` is rejected instead of being treated as `6`. |
 | Replacement limit | Range mode refuses quantities above the mobile safety limit. |

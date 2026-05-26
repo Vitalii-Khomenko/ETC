@@ -6,6 +6,7 @@ let lastAppliedPlan = null;
 let hasChanges = false;
 let activeDownloadUrls = [];
 let machineRangeRenderTimer = null;
+let diagramExpansionState = new Map();
 const DEFAULT_NUMBER_STEP = "1";
 const MAX_RANGE_GROUPS = 20;
 
@@ -156,6 +157,55 @@ function formatPreviewGroup(row) {
     return [row.machine, row.section, row.range].filter(Boolean).join(" | ") || "-";
 }
 
+function getAppliedReplacementLookup() {
+    const lookup = {
+        itemKeys: new Set(),
+        globalKeys: new Set(),
+        machineCounts: new Map()
+    };
+    const replacements = Array.isArray(lastAppliedPlan?.replacements) ? lastAppliedPlan.replacements : [];
+    for (const replacement of replacements) {
+        const row = replacement.row || {};
+        const dbno = String(row.dbno || "");
+        const newValue = String(row.newValue || "");
+        if (!dbno || !newValue) continue;
+        if (row.sectionKey) {
+            lookup.itemKeys.add(`${row.sectionKey}|${dbno}|${newValue}`);
+        } else {
+            lookup.globalKeys.add(`${dbno}|${newValue}`);
+        }
+        if (row.machineKey) {
+            lookup.machineCounts.set(row.machineKey, (lookup.machineCounts.get(row.machineKey) || 0) + 1);
+        }
+    }
+    return lookup;
+}
+
+function wasEquipmentReplaced(lookup, sectionKey, equipment) {
+    const dbno = String(equipment.dbno || "");
+    if (!dbno) return false;
+    const values = [equipment.id, equipment.txt].filter(Boolean).map(String);
+    return values.some(value =>
+        lookup.itemKeys.has(`${sectionKey}|${dbno}|${value}`) ||
+        lookup.globalKeys.has(`${dbno}|${value}`)
+    );
+}
+
+function createToggleButton(className, expanded, controlsId) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = className;
+    button.setAttribute("aria-expanded", String(expanded));
+    button.setAttribute("aria-controls", controlsId);
+    return button;
+}
+
+function applyDisclosureState(button, body, storageKey, expanded) {
+    button.setAttribute("aria-expanded", String(expanded));
+    body.hidden = !expanded;
+    diagramExpansionState.set(storageKey, expanded);
+}
+
 function renderMachineDiagram() {
     const summaryEl = byId("diagramSummary");
     const diagramEl = byId("machineDiagram");
@@ -175,7 +225,9 @@ function renderMachineDiagram() {
         onlyMesspunkt: byId("onlyMesspunkt").checked
     });
     const sectionCount = data.machines.reduce((sum, group) => sum + group.sections.filter(section => section.equipment.length > 0).length, 0);
-    summaryEl.textContent = `Machines: ${data.totals.machines} | Sections: ${sectionCount} | Shown equipment: ${data.totals.shownEquipment} | A/a placeholders: ${data.totals.placeholders} | Replacement matches: ${data.totals.candidates}`;
+    const replacementLookup = getAppliedReplacementLookup();
+    const replacedCount = Array.from(replacementLookup.machineCounts.values()).reduce((sum, count) => sum + count, 0) + replacementLookup.globalKeys.size;
+    summaryEl.textContent = `Machines: ${data.totals.machines} | Sections: ${sectionCount} | Shown equipment: ${data.totals.shownEquipment} | A/a placeholders: ${data.totals.placeholders} | Replacement matches: ${data.totals.candidates} | Replaced: ${replacedCount}`;
 
     if (data.machines.length === 0) {
         const empty = document.createElement("div");
@@ -185,12 +237,19 @@ function renderMachineDiagram() {
         return;
     }
 
-    for (const group of data.machines) {
+    data.machines.forEach((group, machineIndex) => {
+        const machineReplacedCount = group.sections.reduce((sum, section) => (
+            sum + section.equipment.filter(equipment => wasEquipmentReplaced(replacementLookup, section.section.key, equipment)).length
+        ), 0);
+        const machineHasActivity = group.candidateCount > 0 || machineReplacedCount > 0;
+        const machineStorageKey = `machine:${group.machine.key}`;
+        const machineExpanded = diagramExpansionState.has(machineStorageKey) ? diagramExpansionState.get(machineStorageKey) : machineHasActivity;
+        const machineBodyId = `machine-body-${machineIndex}`;
         const block = document.createElement("article");
         block.className = "machine-block";
+        block.classList.toggle("collapsed", !machineExpanded);
 
-        const header = document.createElement("div");
-        header.className = "machine-block-header";
+        const header = createToggleButton("machine-block-header diagram-toggle", machineExpanded, machineBodyId);
 
         const titleWrap = document.createElement("div");
         const title = document.createElement("div");
@@ -204,42 +263,65 @@ function renderMachineDiagram() {
 
         const counts = document.createElement("div");
         counts.className = "machine-counts";
-        counts.textContent = `${group.equipment.length} shown | ${group.candidateCount} match`;
+        counts.textContent = `${group.equipment.length} shown | ${group.candidateCount} match | ${machineReplacedCount} replaced`;
 
         header.appendChild(titleWrap);
         header.appendChild(counts);
         block.appendChild(header);
+
+        const machineBody = document.createElement("div");
+        machineBody.id = machineBodyId;
+        machineBody.className = "machine-body";
+        machineBody.hidden = !machineExpanded;
+        header.addEventListener("click", () => {
+            const nextExpanded = header.getAttribute("aria-expanded") !== "true";
+            block.classList.toggle("collapsed", !nextExpanded);
+            applyDisclosureState(header, machineBody, machineStorageKey, nextExpanded);
+        });
 
         const visibleSections = group.sections.filter(section => section.equipment.length > 0);
         if (visibleSections.length === 0) {
             const empty = document.createElement("div");
             empty.className = "empty-machine";
             empty.textContent = "No equipment for the current filters.";
-            block.appendChild(empty);
+            machineBody.appendChild(empty);
         } else {
-            for (const section of visibleSections) {
+            visibleSections.forEach((section, sectionIndex) => {
+                const sectionReplacedCount = section.equipment.filter(equipment => wasEquipmentReplaced(replacementLookup, section.section.key, equipment)).length;
+                const sectionHasActivity = section.candidateCount > 0 || sectionReplacedCount > 0;
+                const sectionStorageKey = `section:${section.section.key}`;
+                const sectionExpanded = diagramExpansionState.has(sectionStorageKey) ? diagramExpansionState.get(sectionStorageKey) : sectionHasActivity;
+                const sectionBodyId = `section-body-${machineIndex}-${sectionIndex}`;
                 const sectionBlock = document.createElement("section");
                 sectionBlock.className = "section-block";
+                sectionBlock.classList.toggle("collapsed", !sectionExpanded);
 
-                const sectionHeader = document.createElement("div");
-                sectionHeader.className = "section-header";
+                const sectionHeader = createToggleButton("section-header diagram-toggle", sectionExpanded, sectionBodyId);
                 const sectionTitle = document.createElement("div");
                 sectionTitle.className = "section-title";
                 sectionTitle.textContent = getSectionTitle(section.section);
                 const sectionCounts = document.createElement("div");
                 sectionCounts.className = "section-counts";
-                sectionCounts.textContent = `${section.equipment.length} shown | ${section.candidateCount} match`;
+                sectionCounts.textContent = `${section.equipment.length} shown | ${section.candidateCount} match | ${sectionReplacedCount} replaced`;
                 sectionHeader.appendChild(sectionTitle);
                 sectionHeader.appendChild(sectionCounts);
                 sectionBlock.appendChild(sectionHeader);
 
                 const flow = document.createElement("div");
+                flow.id = sectionBodyId;
                 flow.className = "equipment-flow";
+                flow.hidden = !sectionExpanded;
+                sectionHeader.addEventListener("click", () => {
+                    const nextExpanded = sectionHeader.getAttribute("aria-expanded") !== "true";
+                    sectionBlock.classList.toggle("collapsed", !nextExpanded);
+                    applyDisclosureState(sectionHeader, flow, sectionStorageKey, nextExpanded);
+                });
                 for (const equipment of section.equipment) {
                     const chip = document.createElement("span");
                     chip.className = "equipment-chip";
                     if (equipment.isPlaceholder) chip.classList.add("placeholder");
                     if (equipment.isCandidate) chip.classList.add("candidate");
+                    if (wasEquipmentReplaced(replacementLookup, section.section.key, equipment)) chip.classList.add("replaced");
 
                     const dbno = document.createElement("span");
                     dbno.className = "chip-dbno";
@@ -252,12 +334,13 @@ function renderMachineDiagram() {
                     flow.appendChild(chip);
                 }
                 sectionBlock.appendChild(flow);
-                block.appendChild(sectionBlock);
-            }
+                machineBody.appendChild(sectionBlock);
+            });
         }
 
+        block.appendChild(machineBody);
         diagramEl.appendChild(block);
-    }
+    });
 }
 
 async function handleFileSelect(event) {
@@ -270,6 +353,7 @@ async function handleFileSelect(event) {
     originalContent = "";
     loadedFile = null;
     clearDownloadLinks();
+    diagramExpansionState.clear();
     byId("downloadBtn").disabled = true;
 
     if (!file) {
@@ -723,6 +807,7 @@ function applyChanges() {
     lastAppliedPlan = result.plan;
     hasChanges = true;
     clearDownloadLinks();
+    diagramExpansionState.clear();
     byId("downloadBtn").disabled = false;
     refreshGroupedViews();
     renderRunSummary(`Done: ${result.count} replacements.`);

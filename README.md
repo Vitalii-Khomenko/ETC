@@ -74,7 +74,11 @@ The `Machine Diagram` tab shows the same grouping visually. Each machine is a
 compact block with its `CIRCUIT` sections inside it, and each shown equipment
 item is a chip with its `dbno` and `id`/`txt` value. `A`/`a` placeholders are
 highlighted so the operator can see which measurements belong to which machine
-and section before replacement.
+and section before replacement. Machine and section lists can be collapsed or
+expanded. Lists with replacement matches, or numbers changed by the last
+`Replace` action, open by default; lists without matches stay collapsed by
+default to save space. After `Replace`, newly written numbers are highlighted
+green in the diagram.
 
 ## Files
 
@@ -105,7 +109,8 @@ and section before replacement.
 8. Enable `Use dbno start filter` only when the global run should start at a
    specific `dbno` or later.
 9. Open `Machine Diagram` to review machine-to-section-to-equipment grouping in
-   a compact visual layout.
+   a compact visual layout. Expand or collapse machine and section lists as
+   needed.
 10. Press `Preview`, then `Replace`.
 11. Download the new `.etc` file and export log. The ETC output name is the
    original file name plus the configured suffix, for example `3_fixed.etc`.

@@ -45,6 +45,19 @@ def run_download_retry_ui_case() -> dict:
     }
 
 
+def run_diagram_ui_case() -> dict:
+    css = (ROOT / "css" / "style.css").read_text(encoding="utf-8")
+    main_js = (ROOT / "js" / "main.js").read_text(encoding="utf-8")
+    return {
+        "hasDisclosureButtons": "function createToggleButton" in main_js and "aria-expanded" in main_js,
+        "defaultsUseActivity": "machineHasActivity" in main_js and "sectionHasActivity" in main_js,
+        "tracksExpansionState": "diagramExpansionState" in main_js and "applyDisclosureState" in main_js,
+        "clearsExpansionAfterReplace": "lastAppliedPlan = result.plan" in main_js and "diagramExpansionState.clear();" in main_js,
+        "hasReplacedLookup": "function getAppliedReplacementLookup" in main_js and "function wasEquipmentReplaced" in main_js,
+        "hasGreenReplacedStyle": ".equipment-chip.replaced" in css and "#e6f7ec" in css
+    }
+
+
 def run_node_case() -> dict:
     script = r"""
 const fixer = require('./js/etc-fixer.js');
@@ -575,6 +588,14 @@ def main() -> None:
     assert_true(download_retry_ui["linkRendererExists"], "download retry links should be rendered after export")
     assert_true(download_retry_ui["downloadClickUsesVisibleLinks"], "download action should click the rendered retry links")
     assert_true(download_retry_ui["doesNotClaimStarted"], "download log should not claim that browser downloads definitely started")
+
+    diagram_ui = run_diagram_ui_case()
+    assert_true(diagram_ui["hasDisclosureButtons"], "machine diagram should render collapsible disclosure buttons")
+    assert_true(diagram_ui["defaultsUseActivity"], "machine diagram collapsed defaults should depend on matches or replacements")
+    assert_true(diagram_ui["tracksExpansionState"], "machine diagram should keep manual expansion state while rerendering")
+    assert_true(diagram_ui["clearsExpansionAfterReplace"], "machine diagram should reset expansion defaults after replacements")
+    assert_true(diagram_ui["hasReplacedLookup"], "machine diagram should detect equipment changed by the last replacement plan")
+    assert_true(diagram_ui["hasGreenReplacedStyle"], "machine diagram should style replaced equipment chips in green")
 
     result = run_node_case()
     assert_true(result["singleCount"] == 1, "single mode should replace one tag")

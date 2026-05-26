@@ -244,12 +244,47 @@ input[type="radio"] {
 
 .machine-block-header {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto 1fr auto;
     gap: 10px;
     align-items: start;
+    width: 100%;
     padding: 10px 12px;
+    border: 0;
     border-bottom: 1px solid #edf0ef;
     background: #f4f8f6;
+    color: inherit;
+    box-shadow: none;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+
+.diagram-toggle,
+.diagram-toggle:nth-child(2) {
+    background: #f4f8f6;
+    color: inherit;
+    box-shadow: none;
+}
+
+.diagram-toggle::before {
+    content: "v";
+    color: var(--primary-dark);
+    font-size: 0.95rem;
+    font-weight: 900;
+    line-height: 1.2;
+    transform: translateY(1px);
+}
+
+.diagram-toggle[aria-expanded="false"]::before {
+    content: ">";
+}
+
+.diagram-toggle:active {
+    transform: none;
+}
+
+.diagram-toggle:hover {
+    background: #edf6f2;
 }
 
 .machine-title {
@@ -281,10 +316,29 @@ input[type="radio"] {
 
 .section-header {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto 1fr auto;
     gap: 8px;
     align-items: center;
+    width: 100%;
     padding: 8px 12px 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    box-shadow: none;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+
+.section-header.diagram-toggle,
+.section-header.diagram-toggle:nth-child(2) {
+    background: transparent;
+    color: inherit;
+    box-shadow: none;
+}
+
+.section-header.diagram-toggle:hover {
+    background: #f8faf9;
 }
 
 .section-title {
@@ -324,6 +378,18 @@ input[type="radio"] {
 
 .equipment-chip.candidate {
     box-shadow: inset 0 -2px 0 rgba(31, 122, 104, 0.28);
+}
+
+.equipment-chip.replaced {
+    border-color: #1b8f57;
+    background: #e6f7ec;
+    color: #14633e;
+    font-weight: 800;
+    box-shadow: inset 0 -2px 0 rgba(27, 143, 87, 0.38);
+}
+
+.equipment-chip.replaced .chip-dbno {
+    color: #23734d;
 }
 
 .chip-dbno {
