@@ -17,15 +17,25 @@ def run_ui_defaults_case() -> dict:
     html = (ROOT / "index.html").read_text(encoding="utf-8")
     main_js = (ROOT / "js" / "main.js").read_text(encoding="utf-8")
     empty_fields = ["startNumber", "quantity", "startDbno"]
+    render_start = main_js.index("function renderMachineRanges")
+    existing_pos = main_js.index("const existingValues = getExistingMachineRangeValues();", render_start)
+    clear_pos = main_js.index('body.textContent = "";', render_start)
     result = {
         f"{field}HasNoDefaultValue": re.search(rf'id="{field}"[^>]*\bvalue=', html) is None
         for field in empty_fields
     }
     result["numberStepDefaultIsOne"] = re.search(r'id="numberStep"[^>]*\bvalue="1"', html) is not None
+    result["globalControlsAreHidden"] = all(
+        re.search(rf'id="{field}"[^>]*type="hidden"', html) is not None
+        for field in ["startNumber", "numberStep", "quantity", "suffix"]
+    )
+    result["manualMachineModeOnly"] = re.search(r'id="useMachineRanges"[^>]*class="hidden"[^>]*checked', html) is not None
+    result["fillFromStartButtonRemoved"] = "fillMachineRangesBtn" not in html and "Fill From Start Number" not in html
     result["htmlHasNoNumberInputs"] = 'type="number"' not in html
     result["scriptCreatesNoNumberInputs"] = 'input.type = "number"' not in main_js
     result["machineRangeTableIsCompact"] = "<th>Count</th>" not in html and "<th>Start number</th>" not in html
     result["groupCountRendersBelowSection"] = "function createRangeGroupElement" in main_js and "machine-groups-row" in main_js
+    result["groupCountReadBeforeRerender"] = existing_pos < clear_pos
     result["runFlushesGroupEdits"] = "function getFreshSettingsForRun" in main_js and "renderMachineRangesNow();" in main_js
     return result
 
@@ -575,10 +585,14 @@ def main() -> None:
     assert_true(ui_defaults["numberStepDefaultIsOne"], "number step input should default to 1")
     assert_true(ui_defaults["quantityHasNoDefaultValue"], "quantity input should be empty by default")
     assert_true(ui_defaults["startDbnoHasNoDefaultValue"], "start dbno input should be empty by default")
+    assert_true(ui_defaults["globalControlsAreHidden"], "global replacement fields should stay hidden in the operator UI")
+    assert_true(ui_defaults["manualMachineModeOnly"], "operator UI should stay in machine range mode")
+    assert_true(ui_defaults["fillFromStartButtonRemoved"], "global fill button should be removed from the operator UI")
     assert_true(ui_defaults["htmlHasNoNumberInputs"], "HTML numeric inputs should use text inputs with numeric keyboard hints")
     assert_true(ui_defaults["scriptCreatesNoNumberInputs"], "dynamic numeric inputs should not use browser spinner controls")
     assert_true(ui_defaults["machineRangeTableIsCompact"], "machine range table should keep group fields below the section row")
     assert_true(ui_defaults["groupCountRendersBelowSection"], "group count should render compact group fields below each section")
+    assert_true(ui_defaults["groupCountReadBeforeRerender"], "group count should be read before rerendering clears the table")
     assert_true(ui_defaults["runFlushesGroupEdits"], "preview and replace should apply pending group count edits before reading settings")
 
     download_retry_ui = run_download_retry_ui_case()

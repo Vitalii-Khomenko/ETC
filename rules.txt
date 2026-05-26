@@ -28,7 +28,7 @@ Project Development and Publishing Guidelines for ETC Equipment ID Fixer
    - Keep equipment outside a `BUILDING` under an explicit unassigned group.
    - Keep the machine diagram grouped by `BUILDING` and `CIRCUIT` and synchronized with the current safety filters.
    - Keep machine diagram lists collapsible; groups with matches or just-replaced values should open by default, while inactive groups should stay collapsed.
-   - Keep replacement start/range fields empty by default; keep the number step default at `1`.
+   - Keep legacy global replacement fields hidden in the operator UI; keep section start fields empty and section number step defaulted to `1`.
    - Preserve source file formatting outside the edited attributes.
    - Keep the placeholder safety default enabled: only tags where `id` or `txt` is `A`/`a` are changed.
    - Keep the Messpunkt safety default enabled unless the user intentionally changes it.

@@ -93,8 +93,9 @@ Current expected behavior:
 - Machine range mode is enabled by default.
 - Machine range mode groups equipment by the currently open `BUILDING` block.
 - Each enabled machine range has its own start number and number step.
-- Global range mode remains available when machine range mode is disabled.
-- The dbno start filter is only applied when explicitly enabled.
+- The operator UI keeps global range controls hidden so section group ranges are
+  configured manually.
+- The legacy dbno start filter remains disabled in the operator UI.
 
 The deterministic numbering model is sound: each accepted replacement advances
 by the selected step in file order within the relevant range.
@@ -151,8 +152,8 @@ Current validation controls are appropriate for field use:
 - Supported extensions are limited to `.etc`, `.xml`, and `.txt`.
 - Start numbers must contain digits only.
 - Start number length is capped.
-- Quantity must be a positive whole number.
-- Batch quantity is capped.
+- Section group counts must be positive whole numbers when provided.
+- Legacy batch quantity is capped inside the replacement engine.
 - Number step must be a positive whole number and is capped.
 - dbno filter input is strictly parsed when enabled.
 - Unsafe output suffixes are rejected.

@@ -24,13 +24,14 @@ python scripts/run_privacy_gate.py
 | Range replacement | A start number such as `55667788` increments by the configured number step for every accepted tag. |
 | First A default | Range mode starts from the first matching `A` unless the dbno start filter is explicitly enabled. |
 | Number step | A step of `2` produces values such as `55667788`, `55667790`, and `55667792`. |
-| Numbering defaults | Start number, quantity, and start dbno inputs are empty; number step defaults to `1`. |
+| Numbering defaults | Operator-facing global range fields are hidden; section start fields are empty and section number step defaults to `1`. |
 | Quantity limit | Range mode stops after the requested quantity. |
 | Machine detection | `BUILDING` blocks are detected as machine groups and report their own matching `A`/`a` counts. |
 | CIRCUIT section detection | Open `CIRCUIT` blocks are detected as sections inside each `BUILDING` machine. |
 | Machine ranges | Enabled machine sections use independent start numbers and number steps while preserving file order inside each section. |
 | Split section ranges | A section can be split into multiple numbering groups with fixed counts and a blank final count for remaining matches. |
 | Compact group editor | Group counts are entered on each section row, and group fields render below the section without browser spinner controls. |
+| Group count persistence | The current `Groups` value is read before the section table is redrawn, so entering `2` adds a second group row instead of resetting to `1`. |
 | Machine diagram | The diagram data groups shown equipment by machine and CIRCUIT section and displays one-sided placeholder values such as `A / 3313616`. |
 | Diagram disclosure | Machine and section lists render as collapsible disclosures; inactive lists are collapsed by default. |
 | Replaced-number highlight | Numbers changed by the last replacement plan are highlighted in green in the machine diagram. |

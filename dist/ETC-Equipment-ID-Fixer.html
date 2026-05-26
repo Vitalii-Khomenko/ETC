@@ -726,46 +726,15 @@ th {
         <section class="card">
             <h2>2. Replacement</h2>
 
-            <div class="grid-2">
-                <div class="form-group">
-                    <label for="startNumber">Start number</label>
-                    <input type="text" id="startNumber" inputmode="numeric" autocomplete="off" spellcheck="false">
-                </div>
-                <div class="form-group">
-                    <label for="numberStep">Number step</label>
-                    <input type="text" id="numberStep" value="1" inputmode="numeric" autocomplete="off" spellcheck="false">
-                </div>
-            </div>
-
-            <div class="grid-2">
-                <div class="form-group">
-                    <label for="quantity">Quantity</label>
-                    <input type="text" id="quantity" inputmode="numeric" autocomplete="off" spellcheck="false">
-                </div>
-                <div class="form-group">
-                    <label for="suffix">File suffix</label>
-                    <input type="text" id="suffix" value="_fixed" autocomplete="off" spellcheck="false">
-                </div>
-            </div>
-
-            <div class="grid-2">
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="useDbnoStart">
-                        Use dbno start filter
-                    </label>
-                </div>
-                <div class="form-group" id="startDbnoGroup">
-                    <label for="startDbno">Start dbno</label>
-                    <input type="text" id="startDbno" inputmode="numeric" autocomplete="off" spellcheck="false">
-                </div>
-            </div>
+            <input id="startNumber" type="hidden">
+            <input id="numberStep" type="hidden" value="1">
+            <input id="quantity" type="hidden">
+            <input id="suffix" type="hidden" value="_fixed">
+            <input id="useDbnoStart" type="checkbox" class="hidden">
+            <input id="startDbno" type="text" class="hidden" inputmode="numeric" autocomplete="off" spellcheck="false">
+            <input id="useMachineRanges" type="checkbox" class="hidden" checked>
 
             <div class="switch-row">
-                <label>
-                    <input type="checkbox" id="useMachineRanges" checked>
-                    <span>Use machine ranges</span>
-                </label>
                 <label>
                     <input type="checkbox" id="onlyA" checked>
                     <span>Only replace id/txt with A/a</span>
@@ -779,9 +748,6 @@ th {
             <div id="machineRangesPanel">
                 <h3>Machine ranges</h3>
                 <div id="machineSummary" class="summary-box" aria-live="polite">No file selected.</div>
-                <div class="inline-actions">
-                    <button id="fillMachineRangesBtn" type="button">Fill From Start Number</button>
-                </div>
                 <div class="table-wrap">
                     <table class="machine-table">
                         <thead>
@@ -1886,7 +1852,8 @@ function updateModeUi() {
     const useFilter = byId("useDbnoStart").checked;
     const useMachineRanges = byId("useMachineRanges").checked;
     byId("startDbno").disabled = !useFilter;
-    byId("startDbnoGroup").classList.toggle("hidden", !useFilter);
+    const startDbnoGroup = byId("startDbnoGroup");
+    if (startDbnoGroup) startDbnoGroup.classList.toggle("hidden", !useFilter);
     byId("machineRangesPanel").classList.toggle("hidden", !useMachineRanges);
 }
 
@@ -2417,6 +2384,7 @@ function updateMachineRangeRows() {
 function renderMachineRanges(options = {}) {
     const summaryEl = byId("machineSummary");
     const body = byId("machineBody");
+    const existingValues = getExistingMachineRangeValues();
     body.textContent = "";
 
     if (!currentContent || !loadedFile) {
@@ -2430,7 +2398,6 @@ function renderMachineRanges(options = {}) {
         return;
     }
 
-    const existingValues = getExistingMachineRangeValues();
     const allSummaries = getMachineSectionSummaries(currentContent, {
         onlyA: byId("onlyA").checked,
         onlyMesspunkt: byId("onlyMesspunkt").checked,
@@ -2558,16 +2525,6 @@ function refreshGroupedViews(options = {}) {
     renderFileSummary();
 }
 
-function fillMachineRangesFromGlobal() {
-    if (!/^\d+$/.test(byId("startNumber").value.trim()) || !/^\d+$/.test(byId("numberStep").value.trim())) {
-        logWarn("Enter a global start number and number step before filling machine ranges.");
-        renderMachineRanges({ forceFill: true });
-        return;
-    }
-    renderMachineRanges({ forceFill: true });
-    logOk("Machine ranges filled from the global start number.");
-}
-
 function getFreshSettingsForRun() {
     if (currentMode() === "machine" && currentContent && loadedFile) {
         renderMachineRangesNow();
@@ -2681,7 +2638,6 @@ document.addEventListener("DOMContentLoaded", () => {
     byId("previewBtn").addEventListener("click", previewChanges);
     byId("applyBtn").addEventListener("click", applyChanges);
     byId("downloadBtn").addEventListener("click", downloadCurrentFile);
-    byId("fillMachineRangesBtn").addEventListener("click", fillMachineRangesFromGlobal);
     byId("diagramTab").addEventListener("click", () => setReviewTab("diagramPanel"));
     byId("previewTab").addEventListener("click", () => setReviewTab("previewPanel"));
     byId("onlyA").addEventListener("change", refreshGroupedViews);

@@ -26,46 +26,15 @@
         <section class="card">
             <h2>2. Replacement</h2>
 
-            <div class="grid-2">
-                <div class="form-group">
-                    <label for="startNumber">Start number</label>
-                    <input type="text" id="startNumber" inputmode="numeric" autocomplete="off" spellcheck="false">
-                </div>
-                <div class="form-group">
-                    <label for="numberStep">Number step</label>
-                    <input type="text" id="numberStep" value="1" inputmode="numeric" autocomplete="off" spellcheck="false">
-                </div>
-            </div>
-
-            <div class="grid-2">
-                <div class="form-group">
-                    <label for="quantity">Quantity</label>
-                    <input type="text" id="quantity" inputmode="numeric" autocomplete="off" spellcheck="false">
-                </div>
-                <div class="form-group">
-                    <label for="suffix">File suffix</label>
-                    <input type="text" id="suffix" value="_fixed" autocomplete="off" spellcheck="false">
-                </div>
-            </div>
-
-            <div class="grid-2">
-                <div class="form-group">
-                    <label>
-                        <input type="checkbox" id="useDbnoStart">
-                        Use dbno start filter
-                    </label>
-                </div>
-                <div class="form-group" id="startDbnoGroup">
-                    <label for="startDbno">Start dbno</label>
-                    <input type="text" id="startDbno" inputmode="numeric" autocomplete="off" spellcheck="false">
-                </div>
-            </div>
+            <input id="startNumber" type="hidden">
+            <input id="numberStep" type="hidden" value="1">
+            <input id="quantity" type="hidden">
+            <input id="suffix" type="hidden" value="_fixed">
+            <input id="useDbnoStart" type="checkbox" class="hidden">
+            <input id="startDbno" type="text" class="hidden" inputmode="numeric" autocomplete="off" spellcheck="false">
+            <input id="useMachineRanges" type="checkbox" class="hidden" checked>
 
             <div class="switch-row">
-                <label>
-                    <input type="checkbox" id="useMachineRanges" checked>
-                    <span>Use machine ranges</span>
-                </label>
                 <label>
                     <input type="checkbox" id="onlyA" checked>
                     <span>Only replace id/txt with A/a</span>
@@ -79,9 +48,6 @@
             <div id="machineRangesPanel">
                 <h3>Machine ranges</h3>
                 <div id="machineSummary" class="summary-box" aria-live="polite">No file selected.</div>
-                <div class="inline-actions">
-                    <button id="fillMachineRangesBtn" type="button">Fill From Start Number</button>
-                </div>
                 <div class="table-wrap">
                     <table class="machine-table">
                         <thead>

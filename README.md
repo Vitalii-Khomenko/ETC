@@ -40,9 +40,9 @@ Matching `ELECTRICALEQUIPMENT` tags are assigned to the currently open machine
 and nearest open section. Each section row shows its detected `A`/`a` count and
 can be split into one or more numbering groups.
 
-Start number, quantity, optional dbno filter, and section group start number
-fields are empty by default. Global and section group number step fields
-default to `1`.
+The operator UI uses machine range mode by default. Global range fields are
+kept hidden, section group start numbers are empty by default, and each section
+group step defaults to `1`. Exported files use the `_fixed` suffix.
 
 Machine example:
 
@@ -95,25 +95,17 @@ green in the diagram.
 3. The app counts `ELECTRICALEQUIPMENT` tags, `Messpunkt` tags, and `A`/`a`
    placeholders, then groups matching placeholders by `BUILDING` machine and
    open `CIRCUIT` section.
-4. Enter the global start number and keep or adjust the default number step
-   `1`, then press
-   `Fill From Start Number` when section group rows should be filled from those
-   values. Leave it alone when each section group will be filled manually.
-5. For each section, set `Groups` when the section needs multiple numbering
+4. For each section, set `Groups` when the section needs multiple numbering
    subgroups. Enter `Count` for fixed-size groups and leave the final `Count`
    blank when it should cover the remaining matches.
-6. Enter each needed section group start number and adjust any group step only
+5. Enter each needed section group start number and adjust any group step only
    when it should differ from `1`.
-7. Disable `Use machine ranges` only when one global range should be used for
-   the whole file.
-8. Enable `Use dbno start filter` only when the global run should start at a
-   specific `dbno` or later.
-9. Open `Machine Diagram` to review machine-to-section-to-equipment grouping in
+6. Open `Machine Diagram` to review machine-to-section-to-equipment grouping in
    a compact visual layout. Expand or collapse machine and section lists as
    needed.
-10. Press `Preview`, then `Replace`.
-11. Download the new `.etc` file and export log. The ETC output name is the
-   original file name plus the configured suffix, for example `3_fixed.etc`.
+7. Press `Preview`, then `Replace`.
+8. Download the new `.etc` file and export log. The ETC output name is the
+   original file name plus the `_fixed` suffix, for example `3_fixed.etc`.
    The log uses the exported file name plus `_export-log.txt`, for example
    `3_fixed_export-log.txt`.
    The app also keeps direct `ETC file` and `Export log` links on screen after

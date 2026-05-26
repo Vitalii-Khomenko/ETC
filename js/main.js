@@ -56,7 +56,8 @@ function updateModeUi() {
     const useFilter = byId("useDbnoStart").checked;
     const useMachineRanges = byId("useMachineRanges").checked;
     byId("startDbno").disabled = !useFilter;
-    byId("startDbnoGroup").classList.toggle("hidden", !useFilter);
+    const startDbnoGroup = byId("startDbnoGroup");
+    if (startDbnoGroup) startDbnoGroup.classList.toggle("hidden", !useFilter);
     byId("machineRangesPanel").classList.toggle("hidden", !useMachineRanges);
 }
 
@@ -587,6 +588,7 @@ function updateMachineRangeRows() {
 function renderMachineRanges(options = {}) {
     const summaryEl = byId("machineSummary");
     const body = byId("machineBody");
+    const existingValues = getExistingMachineRangeValues();
     body.textContent = "";
 
     if (!currentContent || !loadedFile) {
@@ -600,7 +602,6 @@ function renderMachineRanges(options = {}) {
         return;
     }
 
-    const existingValues = getExistingMachineRangeValues();
     const allSummaries = getMachineSectionSummaries(currentContent, {
         onlyA: byId("onlyA").checked,
         onlyMesspunkt: byId("onlyMesspunkt").checked,
@@ -728,16 +729,6 @@ function refreshGroupedViews(options = {}) {
     renderFileSummary();
 }
 
-function fillMachineRangesFromGlobal() {
-    if (!/^\d+$/.test(byId("startNumber").value.trim()) || !/^\d+$/.test(byId("numberStep").value.trim())) {
-        logWarn("Enter a global start number and number step before filling machine ranges.");
-        renderMachineRanges({ forceFill: true });
-        return;
-    }
-    renderMachineRanges({ forceFill: true });
-    logOk("Machine ranges filled from the global start number.");
-}
-
 function getFreshSettingsForRun() {
     if (currentMode() === "machine" && currentContent && loadedFile) {
         renderMachineRangesNow();
@@ -851,7 +842,6 @@ document.addEventListener("DOMContentLoaded", () => {
     byId("previewBtn").addEventListener("click", previewChanges);
     byId("applyBtn").addEventListener("click", applyChanges);
     byId("downloadBtn").addEventListener("click", downloadCurrentFile);
-    byId("fillMachineRangesBtn").addEventListener("click", fillMachineRangesFromGlobal);
     byId("diagramTab").addEventListener("click", () => setReviewTab("diagramPanel"));
     byId("previewTab").addEventListener("click", () => setReviewTab("previewPanel"));
     byId("onlyA").addEventListener("change", refreshGroupedViews);
