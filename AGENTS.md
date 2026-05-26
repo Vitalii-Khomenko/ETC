@@ -24,8 +24,9 @@ Do not add Russian or any other non-English text to project files.
 - Preserve source file formatting around `ELECTRICALEQUIPMENT` tags.
 - Preserve the placeholder safety default: change only tags where `id` or `txt` is `A`/`a` unless the user changes options.
 - Keep numbering deterministic: start at the selected number and increment by the selected number step for each accepted replacement.
-- Keep machine range numbering deterministic: group equipment by the open `BUILDING` machine and apply each enabled machine range independently.
+- Keep machine range numbering deterministic: group equipment by the open `BUILDING` machine and nearest open `CIRCUIT` section, then apply each enabled section group independently.
 - Keep the machine diagram view synchronized with the current loaded content and replacement safety filters.
+- Keep split section ranges deterministic: fixed `Count` values consume that many matching tags in file order, and a blank `Count` consumes the remaining tags in that section.
 - Keep replacement start/range fields empty by default; keep the number step default at `1`.
 - Start from the first matching `A` by default; use dbno only when the explicit filter is enabled.
 - Update project documentation after each functional change.

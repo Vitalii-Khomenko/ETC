@@ -6,6 +6,7 @@ let lastAppliedPlan = null;
 let hasChanges = false;
 let activeDownloadUrls = [];
 const DEFAULT_NUMBER_STEP = "1";
+const MAX_RANGE_GROUPS = 20;
 
 function byId(id) {
     return document.getElementById(id);
@@ -65,7 +66,8 @@ function renderFileSummary() {
     }
     const stats = getEquipmentStats(originalContent);
     const machines = getMachineSummaries(originalContent, getSettings());
-    summary.textContent = `${loadedFile.name} | ${formatBytes(loadedFile.size)} | Machines: ${machines.length} | ELECTRICALEQUIPMENT: ${stats.total} | Messpunkt: ${stats.messpunkt} | A/a placeholders: ${stats.placeholders} | Messpunkt A/a: ${stats.messpunktPlaceholders}`;
+    const sections = getMachineSectionSummaries(originalContent, getSettings()).filter(section => section.candidates > 0);
+    summary.textContent = `${loadedFile.name} | ${formatBytes(loadedFile.size)} | Machines: ${machines.length} | Sections with A/a: ${sections.length} | ELECTRICALEQUIPMENT: ${stats.total} | Messpunkt: ${stats.messpunkt} | A/a placeholders: ${stats.placeholders} | Messpunkt A/a: ${stats.messpunktPlaceholders}`;
 }
 
 function renderRunSummary(text) {
@@ -131,7 +133,7 @@ function renderPreview(rows) {
     for (const row of rows.slice(0, 80)) {
         const tr = document.createElement("tr");
         const statusClass = row.ok ? "status-ok" : "status-warn";
-        [row.dbno, row.machine || "-", row.oldId, row.oldTxt, row.newValue, row.status].forEach((value, index) => {
+        [row.dbno, formatPreviewGroup(row), row.oldId, row.oldTxt, row.newValue, row.status].forEach((value, index) => {
             const td = document.createElement("td");
             td.textContent = value;
             if (index === 5) td.className = statusClass;
@@ -147,6 +149,10 @@ function renderPreview(rows) {
         tr.appendChild(td);
         body.appendChild(tr);
     }
+}
+
+function formatPreviewGroup(row) {
+    return [row.machine, row.section, row.range].filter(Boolean).join(" | ") || "-";
 }
 
 function renderMachineDiagram() {
@@ -167,7 +173,8 @@ function renderMachineDiagram() {
         onlyA: byId("onlyA").checked,
         onlyMesspunkt: byId("onlyMesspunkt").checked
     });
-    summaryEl.textContent = `Machines: ${data.totals.machines} | Shown equipment: ${data.totals.shownEquipment} | A/a placeholders: ${data.totals.placeholders} | Replacement matches: ${data.totals.candidates}`;
+    const sectionCount = data.machines.reduce((sum, group) => sum + group.sections.filter(section => section.equipment.length > 0).length, 0);
+    summaryEl.textContent = `Machines: ${data.totals.machines} | Sections: ${sectionCount} | Shown equipment: ${data.totals.shownEquipment} | A/a placeholders: ${data.totals.placeholders} | Replacement matches: ${data.totals.candidates}`;
 
     if (data.machines.length === 0) {
         const empty = document.createElement("div");
@@ -202,31 +209,50 @@ function renderMachineDiagram() {
         header.appendChild(counts);
         block.appendChild(header);
 
-        if (group.equipment.length === 0) {
+        const visibleSections = group.sections.filter(section => section.equipment.length > 0);
+        if (visibleSections.length === 0) {
             const empty = document.createElement("div");
             empty.className = "empty-machine";
             empty.textContent = "No equipment for the current filters.";
             block.appendChild(empty);
         } else {
-            const flow = document.createElement("div");
-            flow.className = "equipment-flow";
-            for (const equipment of group.equipment) {
-                const chip = document.createElement("span");
-                chip.className = "equipment-chip";
-                if (equipment.isPlaceholder) chip.classList.add("placeholder");
-                if (equipment.isCandidate) chip.classList.add("candidate");
+            for (const section of visibleSections) {
+                const sectionBlock = document.createElement("section");
+                sectionBlock.className = "section-block";
 
-                const dbno = document.createElement("span");
-                dbno.className = "chip-dbno";
-                dbno.textContent = equipment.dbno ? `#${equipment.dbno}` : "#-";
-                const value = document.createElement("span");
-                value.textContent = equipment.displayValue;
-                chip.title = `dbno ${equipment.dbno || "-"} | ${equipment.type || "-"}`;
-                chip.appendChild(dbno);
-                chip.appendChild(value);
-                flow.appendChild(chip);
+                const sectionHeader = document.createElement("div");
+                sectionHeader.className = "section-header";
+                const sectionTitle = document.createElement("div");
+                sectionTitle.className = "section-title";
+                sectionTitle.textContent = getSectionTitle(section.section);
+                const sectionCounts = document.createElement("div");
+                sectionCounts.className = "section-counts";
+                sectionCounts.textContent = `${section.equipment.length} shown | ${section.candidateCount} match`;
+                sectionHeader.appendChild(sectionTitle);
+                sectionHeader.appendChild(sectionCounts);
+                sectionBlock.appendChild(sectionHeader);
+
+                const flow = document.createElement("div");
+                flow.className = "equipment-flow";
+                for (const equipment of section.equipment) {
+                    const chip = document.createElement("span");
+                    chip.className = "equipment-chip";
+                    if (equipment.isPlaceholder) chip.classList.add("placeholder");
+                    if (equipment.isCandidate) chip.classList.add("candidate");
+
+                    const dbno = document.createElement("span");
+                    dbno.className = "chip-dbno";
+                    dbno.textContent = equipment.dbno ? `#${equipment.dbno}` : "#-";
+                    const value = document.createElement("span");
+                    value.textContent = equipment.displayValue;
+                    chip.title = `dbno ${equipment.dbno || "-"} | ${equipment.type || "-"}`;
+                    chip.appendChild(dbno);
+                    chip.appendChild(value);
+                    flow.appendChild(chip);
+                }
+                sectionBlock.appendChild(flow);
+                block.appendChild(sectionBlock);
             }
-            block.appendChild(flow);
         }
 
         diagramEl.appendChild(block);
@@ -280,14 +306,26 @@ async function handleFileSelect(event) {
 }
 
 function getMachineRangeSettings() {
-    const rows = Array.from(document.querySelectorAll("#machineBody tr[data-machine-key]"));
+    const rows = Array.from(document.querySelectorAll("#machineBody tr[data-section-key][data-range-index]"));
     return rows.map(row => ({
         machineKey: row.dataset.machineKey,
         machineLabel: row.dataset.machineLabel,
-        enabled: row.querySelector(".machine-enabled")?.checked === true,
-        startNumber: row.querySelector(".machine-start")?.value || "",
-        numberStep: row.querySelector(".machine-step")?.value || DEFAULT_NUMBER_STEP
+        sectionKey: row.dataset.sectionKey,
+        sectionLabel: row.dataset.sectionLabel,
+        rangeIndex: row.dataset.rangeIndex,
+        rangeLabel: row.dataset.rangeLabel,
+        enabled: row.querySelector(".range-enabled")?.checked === true,
+        limit: row.querySelector(".range-limit")?.value || "",
+        startNumber: row.querySelector(".range-start")?.value || "",
+        numberStep: row.querySelector(".range-step")?.value || DEFAULT_NUMBER_STEP
     }));
+}
+
+function parsePositiveIntegerInput(value) {
+    const raw = String(value || "").trim();
+    if (!/^\d+$/.test(raw)) return null;
+    const parsed = Number(raw);
+    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
 function computeRangePreview(startNumber, count, step) {
@@ -299,47 +337,77 @@ function computeRangePreview(startNumber, count, step) {
     return count === 1 ? start : `${start} - ${last}`;
 }
 
+function computeRangeCounts(totalCount, entries) {
+    let remaining = totalCount;
+    return entries.map(entry => {
+        if (remaining < 1) return 0;
+        const limit = parsePositiveIntegerInput(entry.limit);
+        const count = limit === null ? remaining : Math.min(limit, remaining);
+        remaining -= count;
+        return count;
+    });
+}
+
 function getExistingMachineRangeValues() {
     const values = new Map();
-    for (const row of Array.from(document.querySelectorAll("#machineBody tr[data-machine-key]"))) {
-        values.set(row.dataset.machineKey, {
-            enabled: row.querySelector(".machine-enabled")?.checked === true,
-            startNumber: row.querySelector(".machine-start")?.value || "",
-            numberStep: row.querySelector(".machine-step")?.value || DEFAULT_NUMBER_STEP
+    for (const row of Array.from(document.querySelectorAll("#machineBody tr[data-section-key][data-range-index]"))) {
+        const sectionKey = row.dataset.sectionKey;
+        if (!values.has(sectionKey)) {
+            values.set(sectionKey, {
+                groupCount: 1,
+                ranges: new Map()
+            });
+        }
+        const section = values.get(sectionKey);
+        const groupCountInput = row.querySelector(".range-group-count");
+        if (groupCountInput) {
+            section.groupCount = parsePositiveIntegerInput(groupCountInput.value) || 1;
+        }
+        const rangeIndex = Number(row.dataset.rangeIndex || "0");
+        section.ranges.set(rangeIndex, {
+            enabled: row.querySelector(".range-enabled")?.checked === true,
+            limit: row.querySelector(".range-limit")?.value || "",
+            startNumber: row.querySelector(".range-start")?.value || "",
+            numberStep: row.querySelector(".range-step")?.value || DEFAULT_NUMBER_STEP
         });
     }
     return values;
 }
 
-function nextMachineStartNumbers(summaries, existingValues, forceFill = false) {
-    const starts = new Map();
-    const globalStart = byId("startNumber").value.trim();
-    const rawGlobalStep = byId("numberStep").value.trim();
-    const canAutoFill = /^\d+$/.test(globalStart) && /^\d+$/.test(rawGlobalStep);
-    const globalStep = canAutoFill ? Number(rawGlobalStep) : null;
-    let cursor = canAutoFill ? globalStart : "";
-
-    for (const summary of summaries) {
-        const count = summary.candidates;
-        const existing = existingValues.get(summary.machine.key);
-        const canKeepExisting = !forceFill && existing && existing.startNumber;
-        const startNumber = canKeepExisting ? existing.startNumber : cursor;
-        starts.set(summary.machine.key, startNumber);
-        if (cursor && count > 0 && Number.isSafeInteger(globalStep) && globalStep > 0) {
-            cursor = incrementDigitString(cursor, count, globalStep) || cursor;
-        }
+function updateMachineRangeRows() {
+    const rowsBySection = new Map();
+    for (const row of Array.from(document.querySelectorAll("#machineBody tr[data-section-key][data-range-index]"))) {
+        const sectionKey = row.dataset.sectionKey;
+        if (!rowsBySection.has(sectionKey)) rowsBySection.set(sectionKey, []);
+        rowsBySection.get(sectionKey).push(row);
     }
 
-    return starts;
-}
+    for (const rows of rowsBySection.values()) {
+        rows.sort((left, right) => Number(left.dataset.rangeIndex) - Number(right.dataset.rangeIndex));
+        const totalCount = Number(rows[0]?.dataset.candidateCount || "0");
+        const entries = rows.map(row => ({
+            limit: row.querySelector(".range-limit")?.value || ""
+        }));
+        const counts = computeRangeCounts(totalCount, entries);
+        rows.forEach((row, index) => {
+            const count = counts[index] || 0;
+            const start = row.querySelector(".range-start")?.value || "";
+            const step = row.querySelector(".range-step")?.value || DEFAULT_NUMBER_STEP;
+            const preview = row.querySelector(".machine-range-preview");
+            if (preview) preview.textContent = computeRangePreview(start, count, step);
 
-function updateMachineRangeRows() {
-    for (const row of Array.from(document.querySelectorAll("#machineBody tr[data-machine-key]"))) {
-        const count = Number(row.dataset.candidateCount || "0");
-        const start = row.querySelector(".machine-start")?.value || "";
-        const step = row.querySelector(".machine-step")?.value || DEFAULT_NUMBER_STEP;
-        const preview = row.querySelector(".machine-range-preview");
-        if (preview) preview.textContent = computeRangePreview(start, count, step);
+            const disabled = count === 0;
+            const enabledInput = row.querySelector(".range-enabled");
+            if (enabledInput) {
+                const wasDisabled = enabledInput.disabled;
+                enabledInput.disabled = disabled;
+                if (disabled) enabledInput.checked = false;
+                if (!disabled && wasDisabled) enabledInput.checked = true;
+            }
+            row.querySelectorAll(".range-limit, .range-start, .range-step").forEach(input => {
+                input.disabled = disabled;
+            });
+        });
     }
 }
 
@@ -352,7 +420,7 @@ function renderMachineRanges(options = {}) {
         summaryEl.textContent = "No file selected.";
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = 6;
+        td.colSpan = 8;
         td.textContent = "No machine data.";
         tr.appendChild(td);
         body.appendChild(tr);
@@ -360,95 +428,159 @@ function renderMachineRanges(options = {}) {
     }
 
     const existingValues = getExistingMachineRangeValues();
-    const summaries = getMachineSummaries(currentContent, {
+    const allSummaries = getMachineSectionSummaries(currentContent, {
         onlyA: byId("onlyA").checked,
         onlyMesspunkt: byId("onlyMesspunkt").checked,
         numberStep: byId("numberStep").value
     });
-    const starts = nextMachineStartNumbers(summaries, existingValues, options.forceFill === true);
-    const activeCount = summaries.filter(summary => summary.candidates > 0).length;
+    const summaries = allSummaries.filter(summary => summary.candidates > 0);
+    const machineCount = new Set(allSummaries.map(summary => summary.machine.key)).size;
     const totalCandidates = summaries.reduce((sum, summary) => sum + summary.candidates, 0);
-    summaryEl.textContent = `Machines: ${summaries.length} | Machines with matches: ${activeCount} | Matches to replace: ${totalCandidates}`;
+    summaryEl.textContent = `Machines: ${machineCount} | Sections with matches: ${summaries.length} | Matches to replace: ${totalCandidates}`;
 
     if (summaries.length === 0) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = 6;
-        td.textContent = "No BUILDING machines were found.";
+        td.colSpan = 8;
+        td.textContent = "No matching A/a equipment was found in CIRCUIT sections.";
         tr.appendChild(td);
         body.appendChild(tr);
         return;
     }
 
+    const globalStart = byId("startNumber").value.trim();
+    const rawGlobalStep = byId("numberStep").value.trim();
+    const canAutoFill = options.forceFill === true && /^\d+$/.test(globalStart) && /^\d+$/.test(rawGlobalStep);
+    const globalStep = canAutoFill ? Number(rawGlobalStep) : null;
+    let fillCursor = canAutoFill ? globalStart : "";
+
     for (const summary of summaries) {
         const machine = summary.machine;
+        const section = summary.section;
         const count = summary.candidates;
-        const existing = existingValues.get(machine.key);
-        const enabled = count > 0 && (options.forceFill === true || existing?.enabled !== false);
-        const step = existing ? existing.numberStep : byId("numberStep").value || DEFAULT_NUMBER_STEP;
-        const startNumber = starts.get(machine.key) || "";
-        const tr = document.createElement("tr");
-        tr.dataset.machineKey = machine.key;
-        tr.dataset.machineLabel = getMachineTitle(machine);
-        tr.dataset.candidateCount = String(count);
+        const existing = existingValues.get(section.key);
+        const groupCount = Math.min(MAX_RANGE_GROUPS, Math.max(1, existing?.groupCount || 1));
+        const entries = [];
+        for (let index = 0; index < groupCount; index++) {
+            const existingRange = existing?.ranges.get(index);
+            entries.push({
+                enabled: existingRange?.enabled !== false,
+                limit: existingRange?.limit || "",
+                startNumber: existingRange?.startNumber || "",
+                numberStep: existingRange?.numberStep || byId("numberStep").value || DEFAULT_NUMBER_STEP
+            });
+        }
+        const counts = computeRangeCounts(count, entries);
+        if (canAutoFill) {
+            for (let index = 0; index < entries.length; index++) {
+                if (counts[index] > 0) {
+                    entries[index].startNumber = fillCursor;
+                    fillCursor = incrementDigitString(fillCursor, counts[index], globalStep) || fillCursor;
+                }
+            }
+        }
 
-        const enabledTd = document.createElement("td");
-        const enabledInput = document.createElement("input");
-        enabledInput.type = "checkbox";
-        enabledInput.className = "machine-enabled";
-        enabledInput.checked = enabled;
-        enabledInput.disabled = count === 0;
-        enabledTd.appendChild(enabledInput);
-        tr.appendChild(enabledTd);
+        for (let index = 0; index < entries.length; index++) {
+            const entry = entries[index];
+            const rangeCount = counts[index] || 0;
+            const rangeLabel = `Group ${index + 1}`;
+            const tr = document.createElement("tr");
+            tr.dataset.machineKey = machine.key;
+            tr.dataset.machineLabel = getMachineTitle(machine);
+            tr.dataset.sectionKey = section.key;
+            tr.dataset.sectionLabel = getSectionTitle(section);
+            tr.dataset.rangeIndex = String(index);
+            tr.dataset.rangeLabel = rangeLabel;
+            tr.dataset.candidateCount = String(count);
 
-        const machineTd = document.createElement("td");
-        const name = document.createElement("span");
-        name.className = "machine-name";
-        name.textContent = machine.id || "Unnamed BUILDING";
-        const meta = document.createElement("span");
-        meta.className = "machine-meta";
-        meta.textContent = [machine.txt && machine.txt !== machine.id ? machine.txt : "", machine.dbno ? `dbno ${machine.dbno}` : ""].filter(Boolean).join(" | ");
-        machineTd.appendChild(name);
-        if (meta.textContent) machineTd.appendChild(meta);
-        tr.appendChild(machineTd);
+            const enabledTd = document.createElement("td");
+            const enabledInput = document.createElement("input");
+            enabledInput.type = "checkbox";
+            enabledInput.className = "range-enabled";
+            enabledInput.checked = entry.enabled && rangeCount > 0;
+            enabledInput.disabled = rangeCount === 0;
+            enabledTd.appendChild(enabledInput);
+            tr.appendChild(enabledTd);
 
-        const countTd = document.createElement("td");
-        countTd.textContent = String(count);
-        tr.appendChild(countTd);
+            const machineTd = document.createElement("td");
+            const name = document.createElement("span");
+            name.className = "machine-name";
+            name.textContent = machine.id || "Unnamed BUILDING";
+            const meta = document.createElement("span");
+            meta.className = "machine-meta";
+            meta.textContent = [machine.txt && machine.txt !== machine.id ? machine.txt : "", machine.dbno ? `dbno ${machine.dbno}` : "", getSectionTitle(section)].filter(Boolean).join(" | ");
+            machineTd.appendChild(name);
+            if (meta.textContent) machineTd.appendChild(meta);
+            tr.appendChild(machineTd);
 
-        const startTd = document.createElement("td");
-        const startInput = document.createElement("input");
-        startInput.type = "text";
-        startInput.className = "machine-start";
-        startInput.inputMode = "numeric";
-        startInput.autocomplete = "off";
-        startInput.spellcheck = false;
-        startInput.value = count > 0 ? startNumber : "";
-        startInput.disabled = count === 0;
-        startTd.appendChild(startInput);
-        tr.appendChild(startTd);
+            const countTd = document.createElement("td");
+            countTd.textContent = String(count);
+            tr.appendChild(countTd);
 
-        const stepTd = document.createElement("td");
-        const stepInput = document.createElement("input");
-        stepInput.type = "number";
-        stepInput.className = "machine-step";
-        stepInput.min = "1";
-        stepInput.inputMode = "numeric";
-        stepInput.value = step;
-        stepInput.disabled = count === 0;
-        stepTd.appendChild(stepInput);
-        tr.appendChild(stepTd);
+            const groupsTd = document.createElement("td");
+            if (index === 0) {
+                const groupInput = document.createElement("input");
+                groupInput.type = "number";
+                groupInput.className = "range-group-count";
+                groupInput.min = "1";
+                groupInput.max = String(MAX_RANGE_GROUPS);
+                groupInput.inputMode = "numeric";
+                groupInput.value = String(groupCount);
+                groupsTd.appendChild(groupInput);
+            } else {
+                groupsTd.textContent = `${index + 1} of ${groupCount}`;
+            }
+            tr.appendChild(groupsTd);
 
-        const rangeTd = document.createElement("td");
-        rangeTd.className = "machine-range-preview";
-        tr.appendChild(rangeTd);
+            const limitTd = document.createElement("td");
+            const limitInput = document.createElement("input");
+            limitInput.type = "number";
+            limitInput.className = "range-limit";
+            limitInput.min = "1";
+            limitInput.inputMode = "numeric";
+            limitInput.placeholder = "remaining";
+            limitInput.value = entry.limit;
+            limitInput.disabled = rangeCount === 0;
+            limitTd.appendChild(limitInput);
+            tr.appendChild(limitTd);
 
-        body.appendChild(tr);
+            const startTd = document.createElement("td");
+            const startInput = document.createElement("input");
+            startInput.type = "text";
+            startInput.className = "range-start";
+            startInput.inputMode = "numeric";
+            startInput.autocomplete = "off";
+            startInput.spellcheck = false;
+            startInput.value = rangeCount > 0 ? entry.startNumber : "";
+            startInput.disabled = rangeCount === 0;
+            startTd.appendChild(startInput);
+            tr.appendChild(startTd);
+
+            const stepTd = document.createElement("td");
+            const stepInput = document.createElement("input");
+            stepInput.type = "number";
+            stepInput.className = "range-step";
+            stepInput.min = "1";
+            stepInput.inputMode = "numeric";
+            stepInput.value = entry.numberStep || DEFAULT_NUMBER_STEP;
+            stepInput.disabled = rangeCount === 0;
+            stepTd.appendChild(stepInput);
+            tr.appendChild(stepTd);
+
+            const rangeTd = document.createElement("td");
+            rangeTd.className = "machine-range-preview";
+            tr.appendChild(rangeTd);
+
+            body.appendChild(tr);
+        }
     }
 
-    body.querySelectorAll("input").forEach(input => {
+    body.querySelectorAll(".range-limit, .range-start, .range-step, .range-enabled").forEach(input => {
         input.addEventListener("input", updateMachineRangeRows);
         input.addEventListener("change", updateMachineRangeRows);
+    });
+    body.querySelectorAll(".range-group-count").forEach(input => {
+        input.addEventListener("change", () => renderMachineRanges());
     });
     updateMachineRangeRows();
 }
@@ -537,8 +669,9 @@ function applyChanges() {
     logOk(`Replaced: ${result.count}`);
     result.plan.warnings.forEach(logWarn);
     for (const replacement of result.plan.replacements) {
-        const machinePrefix = replacement.row.machine ? `${replacement.row.machine} | ` : "";
-        log(`${machinePrefix}dbno ${replacement.row.dbno}: ${replacement.row.oldId}/${replacement.row.oldTxt} -> ${replacement.row.newValue}`);
+        const groupLabel = formatPreviewGroup(replacement.row);
+        const groupPrefix = groupLabel === "-" ? "" : `${groupLabel} | `;
+        log(`${groupPrefix}dbno ${replacement.row.dbno}: ${replacement.row.oldId}/${replacement.row.oldTxt} -> ${replacement.row.newValue}`);
     }
 }
 

@@ -27,13 +27,15 @@ python scripts/run_privacy_gate.py
 | Numbering defaults | Start number, quantity, and start dbno inputs are empty; number step defaults to `1`. |
 | Quantity limit | Range mode stops after the requested quantity. |
 | Machine detection | `BUILDING` blocks are detected as machine groups and report their own matching `A`/`a` counts. |
-| Machine ranges | Enabled machines use independent start numbers and number steps while preserving file order inside each machine. |
-| Machine diagram | The diagram data groups shown equipment by machine and displays one-sided placeholder values such as `A / 3313616`. |
+| CIRCUIT section detection | Open `CIRCUIT` blocks are detected as sections inside each `BUILDING` machine. |
+| Machine ranges | Enabled machine sections use independent start numbers and number steps while preserving file order inside each section. |
+| Split section ranges | A section can be split into multiple numbering groups with fixed counts and a blank final count for remaining matches. |
+| Machine diagram | The diagram data groups shown equipment by machine and CIRCUIT section and displays one-sided placeholder values such as `A / 3313616`. |
 | Safety filter | Existing numeric IDs are not overwritten while `Only replace id/txt with A/a` is enabled and neither attribute is `A`/`a`. |
 | Strict input parsing | Mixed numeric text such as `6abc` is rejected instead of being treated as `6`. |
 | Replacement limit | Range mode refuses quantities above the mobile safety limit. |
 | Output suffix safety | Download suffixes are limited to safe filename characters. |
-| Export log | Export logs include the timestamp, source file, output file, replacement count, machine label, and old/new `id`/`txt` values. |
+| Export log | Export logs include the timestamp, source file, output file, replacement count, machine label, section label, group label, and old/new `id`/`txt` values. |
 | Download retry safety | Export attempts render direct ETC and export-log links so canceled or blocked browser save dialogs can be retried. |
 | Privacy gate | Publishing checks reject private ETC-derived paths, unsafe runtime APIs, unsafe DOM HTML APIs, weak CSP, and non-English project text. |
 | Real template run | `templates/3-template-all-a.etc` is generated from `3.etc`, then processed through the JS engine and checked end-to-end. |

@@ -80,6 +80,23 @@ const machineText = [
   '  </BUILDING>',
   '</ROOT>'
 ].join('\n');
+const circuitText = [
+  '<ROOT>',
+  '  <BUILDING dbno="1" id="MA300" txt="Machine Three">',
+  '    <CIRCUIT dbno="10" id="RLO Anlage" txt="RLO Anlage" typeofconduction="H07V-K">',
+  '      <ELECTRICALEQUIPMENT dbno="1" id="A" txt="A" type="Messpunkt" />',
+  '      <ELECTRICALEQUIPMENT dbno="2" id="A" txt="A" type="Messpunkt" />',
+  '      <ELECTRICALEQUIPMENT dbno="3" id="A" txt="A" type="Messpunkt" />',
+  '      <ELECTRICALEQUIPMENT dbno="4" id="A" txt="A" type="Messpunkt" />',
+  '      <ELECTRICALEQUIPMENT dbno="5" id="A" txt="A" type="Messpunkt" />',
+  '    </CIRCUIT>',
+  '    <CIRCUIT dbno="11" id="RLO Cabinet" txt="RLO Cabinet" typeofconduction="H07V-K">',
+  '      <ELECTRICALEQUIPMENT dbno="6" id="a" txt="a" type="Messpunkt" />',
+  '      <ELECTRICALEQUIPMENT dbno="7" id="A" txt="3313616" type="Messpunkt" />',
+  '    </CIRCUIT>',
+  '  </BUILDING>',
+  '</ROOT>'
+].join('\n');
 const hundredRows = ['<ROOT>'];
 for (let i = 0; i < 105; i++) {
   hundredRows.push(`  <ELECTRICALEQUIPMENT dbno="${6 + i}" id="A" txt="A" type="Messpunkt" />`);
@@ -185,6 +202,76 @@ const diagram = fixer.getMachineDiagramData(machineText, {
   onlyMesspunkt: true
 });
 const diagramMachineTwo = diagram.machines.find(group => group.machine.id === 'MA200');
+const circuitSections = fixer.getMachineSectionSummaries(circuitText, {
+  onlyA: true,
+  onlyMesspunkt: true
+});
+const rloAnlage = circuitSections.find(summary => summary.section.id === 'RLO Anlage');
+const rloCabinet = circuitSections.find(summary => summary.section.id === 'RLO Cabinet');
+const splitRun = fixer.applyMachinePlan(circuitText, {
+  onlyA: true,
+  onlyMesspunkt: true,
+  machineRanges: [
+    {
+      enabled: true,
+      machineKey: rloAnlage.machine.key,
+      machineLabel: 'MA300 | Machine Three | dbno 1',
+      sectionKey: rloAnlage.section.key,
+      sectionLabel: 'RLO Anlage | dbno 10',
+      rangeIndex: '0',
+      rangeLabel: 'Group 1',
+      limit: '2',
+      startNumber: '1000',
+      numberStep: '1'
+    },
+    {
+      enabled: true,
+      machineKey: rloAnlage.machine.key,
+      machineLabel: 'MA300 | Machine Three | dbno 1',
+      sectionKey: rloAnlage.section.key,
+      sectionLabel: 'RLO Anlage | dbno 10',
+      rangeIndex: '1',
+      rangeLabel: 'Group 2',
+      limit: '2',
+      startNumber: '2000',
+      numberStep: '10'
+    },
+    {
+      enabled: true,
+      machineKey: rloAnlage.machine.key,
+      machineLabel: 'MA300 | Machine Three | dbno 1',
+      sectionKey: rloAnlage.section.key,
+      sectionLabel: 'RLO Anlage | dbno 10',
+      rangeIndex: '2',
+      rangeLabel: 'Group 3',
+      limit: '',
+      startNumber: '3000',
+      numberStep: '1'
+    },
+    {
+      enabled: true,
+      machineKey: rloCabinet.machine.key,
+      machineLabel: 'MA300 | Machine Three | dbno 1',
+      sectionKey: rloCabinet.section.key,
+      sectionLabel: 'RLO Cabinet | dbno 11',
+      rangeIndex: '0',
+      rangeLabel: 'Group 1',
+      limit: '',
+      startNumber: '5000',
+      numberStep: '1'
+    }
+  ]
+});
+const circuitDiagram = fixer.getMachineDiagramData(circuitText, {
+  onlyA: true,
+  onlyMesspunkt: true
+});
+const splitExportLog = fixer.buildExportLog({
+  exportedAt: '2026-05-24T12:34:56.000Z',
+  sourceFileName: 'circuit.etc',
+  outputFileName: 'circuit_fixed.etc',
+  plan: splitRun.plan
+});
 const exportLogName = utils.makeExportLogName('3-template-all-a.etc', '_fixed');
 const exportLog = fixer.buildExportLog({
   exportedAt: '2026-05-24T12:34:56.000Z',
@@ -220,7 +307,7 @@ console.log(JSON.stringify({
   exportLogHasSource: exportLog.includes('Source file: 3-template-all-a.etc'),
   exportLogHasOutput: exportLog.includes('Output file: 3-template-all-a_fixed.etc'),
   exportLogHasCount: exportLog.includes('Count: 3'),
-  exportLogHasOneSidedChange: exportLog.includes('2\t\t2\tA\t3313616\t55667789\t55667789'),
+  exportLogHasOneSidedChange: exportLog.includes('2\t\t\t\t2\tA\t3313616\t55667789\t55667789'),
   machineCount: machineSummaries.length,
   machineOneCandidates: machineOne.candidates,
   machineTwoCandidates: machineTwo.candidates,
@@ -234,7 +321,18 @@ console.log(JSON.stringify({
   diagramShownEquipment: diagram.totals.shownEquipment,
   diagramPlaceholderCount: diagram.totals.placeholders,
   diagramCandidateCount: diagram.totals.candidates,
-  diagramShowsOneSidedValue: diagramMachineTwo.equipment.some(item => item.dbno === '4' && item.displayValue === 'A / 3313616' && item.isPlaceholder)
+  diagramShowsOneSidedValue: diagramMachineTwo.equipment.some(item => item.dbno === '4' && item.displayValue === 'A / 3313616' && item.isPlaceholder),
+  circuitSectionCount: circuitSections.length,
+  rloAnlageCandidates: rloAnlage.candidates,
+  rloCabinetCandidates: rloCabinet.candidates,
+  splitRunCount: splitRun.count,
+  splitFirstGroup: splitRun.content.includes('dbno="1" id="1000" txt="1000"') && splitRun.content.includes('dbno="2" id="1001" txt="1001"'),
+  splitSecondGroup: splitRun.content.includes('dbno="3" id="2000" txt="2000"') && splitRun.content.includes('dbno="4" id="2010" txt="2010"'),
+  splitRemainingGroup: splitRun.content.includes('dbno="5" id="3000" txt="3000"'),
+  splitSecondSection: splitRun.content.includes('dbno="6" id="5000" txt="5000"') && splitRun.content.includes('dbno="7" id="5001" txt="5001"'),
+  splitPreviewHasSection: splitRun.plan.rows.some(row => row.section === 'RLO Anlage | dbno 10' && row.range === 'Group 2' && row.newValue === '2010'),
+  circuitDiagramSections: circuitDiagram.machines[0].sections.filter(section => section.equipment.length > 0).length,
+  splitExportLogHasSection: splitExportLog.includes('RLO Anlage | dbno 10') && splitExportLog.includes('Group 3')
 }));
 """
     completed = subprocess.run(
@@ -318,6 +416,10 @@ console.log(JSON.stringify({
   placeholders: data.totals.placeholders,
   candidates: data.totals.candidates,
   machinesWithPlaceholders: machinesWithPlaceholders.length,
+  machinesWithSections: data.machines.filter(group => group.sections.some(section => section.equipment.length > 0)).length,
+  sectionsWithPlaceholders: data.machines.reduce((sum, group) => sum + group.sections.filter(section =>
+    section.equipment.some(item => item.isPlaceholder)
+  ).length, 0),
   hasMachineIds: data.machines.some(group => String(group.machine.id || '').startsWith('MA'))
 }));
 """
@@ -506,6 +608,17 @@ def main() -> None:
     assert_true(result["diagramPlaceholderCount"] == 4, "machine diagram should count placeholders")
     assert_true(result["diagramCandidateCount"] == 4, "machine diagram should count replacement matches")
     assert_true(result["diagramShowsOneSidedValue"], "machine diagram should display one-sided placeholder values")
+    assert_true(result["circuitSectionCount"] == 2, "CIRCUIT sections should be detected inside machines")
+    assert_true(result["rloAnlageCandidates"] == 5, "first CIRCUIT section should count its own replacement candidates")
+    assert_true(result["rloCabinetCandidates"] == 2, "second CIRCUIT section should count its own replacement candidates")
+    assert_true(result["splitRunCount"] == 7, "split section ranges should replace all covered candidates")
+    assert_true(result["splitFirstGroup"], "first split group should use its own start and step")
+    assert_true(result["splitSecondGroup"], "second split group should use its own start and step")
+    assert_true(result["splitRemainingGroup"], "blank split count should cover the remaining section candidates")
+    assert_true(result["splitSecondSection"], "second CIRCUIT section should use its independent range")
+    assert_true(result["splitPreviewHasSection"], "split preview rows should include section and group labels")
+    assert_true(result["circuitDiagramSections"] == 2, "machine diagram should group equipment under CIRCUIT sections")
+    assert_true(result["splitExportLogHasSection"], "export log should include section and group labels")
 
     security = run_security_case()
     assert_true(security["badDbnoRejected"], "strict dbno parsing should reject mixed input")
@@ -543,6 +656,8 @@ def main() -> None:
         assert_true(machine_sample["placeholders"] > 0, "local machine sample should contain placeholders")
         assert_true(machine_sample["candidates"] == machine_sample["placeholders"], "local machine sample candidates should match placeholders with default safety filters")
         assert_true(machine_sample["machinesWithPlaceholders"] > 0, "local machine sample should group placeholders under machines")
+        assert_true(machine_sample["machinesWithSections"] > 0, "local machine sample should expose CIRCUIT sections")
+        assert_true(machine_sample["sectionsWithPlaceholders"] > 0, "local machine sample should group placeholders under CIRCUIT sections")
         assert_true(machine_sample["hasMachineIds"], "local machine sample should expose machine IDs")
 
     subprocess.run([sys.executable, "scripts/build_singlefile_dist.py"], cwd=ROOT, check=True)

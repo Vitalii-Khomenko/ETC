@@ -22,13 +22,14 @@ Real `.etc` exports are ignored by `.gitignore` and should not be committed to
 public repositories.
 
 Export logs are generated locally with each download. They include source file
-names, output file names, machine labels, replacement settings, old `id`/`txt`
-values, and new `id`/`txt` values, so treat them like ETC-derived data and keep
-them local unless reviewed.
+names, output file names, machine labels, section labels, group labels,
+replacement settings, old `id`/`txt` values, and new `id`/`txt` values, so
+treat them like ETC-derived data and keep them local unless reviewed.
 
 The machine diagram is also rendered from the loaded ETC content and can expose
-machine IDs, machine names, `dbno` values, and equipment IDs on screen. Treat
-screenshots of the diagram like ETC-derived data.
+machine IDs, machine names, CIRCUIT section IDs, section names, `dbno` values,
+and equipment IDs on screen. Treat screenshots of the diagram like ETC-derived
+data.
 
 ## Supported Deployment
 
@@ -72,8 +73,8 @@ For the single-file build, `script-src` and `style-src` require
   `6abc` is rejected.
 - Range mode is capped to protect mobile browsers from accidental oversized
   runs.
-- Machine range mode requires a valid start number for every enabled machine
-  with matching equipment.
+- Machine range mode requires a valid start number for every enabled section
+  group with matching equipment.
 - Download suffixes are limited to safe filename characters.
 - Export log names are derived from sanitized output file names.
 - Browser object URLs for export retry links stay valid until the next export,

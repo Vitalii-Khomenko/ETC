@@ -21,9 +21,11 @@ Project Development and Publishing Guidelines for ETC Equipment ID Fixer
    - Apply a dbno start point only when the explicit dbno filter is enabled.
    - Respect the requested quantity in range mode.
    - Detect `BUILDING` blocks as machine groups for machine range mode.
-   - In machine range mode, number matching equipment independently per enabled machine.
+   - Detect open `CIRCUIT` blocks as sections inside each machine.
+   - In machine range mode, number matching equipment independently per enabled section group.
+   - Keep split section ranges deterministic: fixed Count values consume that many matching tags in file order, and a blank Count consumes the remaining tags in that section.
    - Keep equipment outside a `BUILDING` under an explicit unassigned group.
-   - Keep the machine diagram grouped by `BUILDING` and synchronized with the current safety filters.
+   - Keep the machine diagram grouped by `BUILDING` and `CIRCUIT` and synchronized with the current safety filters.
    - Keep replacement start/range fields empty by default; keep the number step default at `1`.
    - Preserve source file formatting outside the edited attributes.
    - Keep the placeholder safety default enabled: only tags where `id` or `txt` is `A`/`a` are changed.
@@ -72,4 +74,4 @@ Project Development and Publishing Guidelines for ETC Equipment ID Fixer
    SECURITY.md                      # Security and privacy notes
    ```
 
-Last updated: 2026-05-25
+Last updated: 2026-05-26

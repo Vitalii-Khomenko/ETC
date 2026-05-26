@@ -2,6 +2,7 @@ const MAX_REPLACEMENTS = 10000;
 const MAX_START_NUMBER_DIGITS = 32;
 const MAX_NUMBER_STEP = 1000000;
 const UNASSIGNED_MACHINE_KEY = "__unassigned__";
+const UNASSIGNED_SECTION_KEY = "__unassigned_section__";
 
 function parseAttributes(tag) {
     const attrs = {};
@@ -79,6 +80,35 @@ function makeMachineInfo(attrs, start, sequence = 0) {
     };
 }
 
+function makeSectionKey(attrs, sequence, machine) {
+    if (!attrs) return `${machine.key}:${UNASSIGNED_SECTION_KEY}`;
+    const id = attrs.id || "";
+    const txt = attrs.txt || "";
+    const dbno = attrs.dbno || "";
+    return `${machine.key}:${sequence}:${dbno}:${id}:${txt}`;
+}
+
+function makeSectionInfo(attrs, start, sequence, machine) {
+    if (!attrs) {
+        return {
+            key: makeSectionKey(null, sequence, machine),
+            dbno: "",
+            id: "No CIRCUIT",
+            txt: "Equipment outside CIRCUIT",
+            start,
+            machineKey: machine.key
+        };
+    }
+    return {
+        key: makeSectionKey(attrs, sequence, machine),
+        dbno: attrs.dbno || "",
+        id: attrs.id || "",
+        txt: attrs.txt || "",
+        start,
+        machineKey: machine.key
+    };
+}
+
 function getMachineTitle(machine) {
     if (!machine) return "Unassigned";
     const parts = [];
@@ -86,6 +116,19 @@ function getMachineTitle(machine) {
     if (machine.txt && machine.txt !== machine.id) parts.push(machine.txt);
     if (machine.dbno) parts.push(`dbno ${machine.dbno}`);
     return parts.length > 0 ? parts.join(" | ") : "Unnamed BUILDING";
+}
+
+function getSectionTitle(section) {
+    if (!section) return "No CIRCUIT";
+    const parts = [];
+    if (section.id) parts.push(section.id);
+    if (section.txt && section.txt !== section.id) parts.push(section.txt);
+    if (section.dbno) parts.push(`dbno ${section.dbno}`);
+    return parts.length > 0 ? parts.join(" | ") : "Unnamed CIRCUIT";
+}
+
+function getMachineSectionTitle(machine, section) {
+    return `${getMachineTitle(machine)} | ${getSectionTitle(section)}`;
 }
 
 function readSettings(rawSettings) {
@@ -142,9 +185,12 @@ function getEquipmentStats(text) {
 function scanEquipment(text) {
     const items = [];
     const machineMap = new Map();
+    const sectionMap = new Map();
     const machineStack = [];
-    const tokenRe = /<\/BUILDING\s*>|<BUILDING\b[^>]*>|<ELECTRICALEQUIPMENT\b[^>]*>/g;
+    const sectionStack = [];
+    const tokenRe = /<\/(?:BUILDING|CIRCUIT)\s*>|<(?:BUILDING|CIRCUIT)\b[^>]*>|<ELECTRICALEQUIPMENT\b[^>]*>/g;
     let machineSequence = 0;
+    let sectionSequence = 0;
     let match;
 
     while ((match = tokenRe.exec(String(text || ""))) !== null) {
@@ -166,12 +212,42 @@ function scanEquipment(text) {
             continue;
         }
 
+        if (/^<CIRCUIT\b/.test(token)) {
+            const machine = machineStack.length > 0 ? machineStack[machineStack.length - 1] : makeMachineInfo(null, -1);
+            const section = makeSectionInfo(parseAttributes(token), match.index, sectionSequence, machine);
+            sectionSequence++;
+            if (!sectionMap.has(section.key)) {
+                sectionMap.set(section.key, {
+                    machine,
+                    section,
+                    total: 0,
+                    messpunkt: 0,
+                    placeholders: 0,
+                    messpunktPlaceholders: 0,
+                    candidates: 0
+                });
+            }
+            if (!/\/\s*>$/.test(token)) sectionStack.push(section);
+            continue;
+        }
+
         if (/^<\/BUILDING/.test(token)) {
-            machineStack.pop();
+            const closedMachine = machineStack.pop();
+            if (closedMachine) {
+                while (sectionStack.length > 0 && sectionStack[sectionStack.length - 1].machineKey === closedMachine.key) {
+                    sectionStack.pop();
+                }
+            }
+            continue;
+        }
+
+        if (/^<\/CIRCUIT/.test(token)) {
+            sectionStack.pop();
             continue;
         }
 
         const machine = machineStack.length > 0 ? machineStack[machineStack.length - 1] : makeMachineInfo(null, -1);
+        const section = sectionStack.length > 0 ? sectionStack[sectionStack.length - 1] : makeSectionInfo(null, machine.start, 0, machine);
         if (!machineMap.has(machine.key)) {
             machineMap.set(machine.key, {
                 machine,
@@ -182,14 +258,34 @@ function scanEquipment(text) {
                 candidates: 0
             });
         }
+        if (!sectionMap.has(section.key)) {
+            sectionMap.set(section.key, {
+                machine,
+                section,
+                total: 0,
+                messpunkt: 0,
+                placeholders: 0,
+                messpunktPlaceholders: 0,
+                candidates: 0
+            });
+        }
 
         const attrs = parseAttributes(token);
-        const summary = machineMap.get(machine.key);
-        summary.total++;
-        if (attrs.type === "Messpunkt") summary.messpunkt++;
+        const machineSummary = machineMap.get(machine.key);
+        const sectionSummary = sectionMap.get(section.key);
+        machineSummary.total++;
+        sectionSummary.total++;
+        if (attrs.type === "Messpunkt") {
+            machineSummary.messpunkt++;
+            sectionSummary.messpunkt++;
+        }
         if (hasAPlaceholder(attrs)) {
-            summary.placeholders++;
-            if (attrs.type === "Messpunkt") summary.messpunktPlaceholders++;
+            machineSummary.placeholders++;
+            sectionSummary.placeholders++;
+            if (attrs.type === "Messpunkt") {
+                machineSummary.messpunktPlaceholders++;
+                sectionSummary.messpunktPlaceholders++;
+            }
         }
 
         items.push({
@@ -197,13 +293,15 @@ function scanEquipment(text) {
             end: match.index + token.length,
             tag: token,
             attrs,
-            machine
+            machine,
+            section
         });
     }
 
     return {
         items,
-        machines: Array.from(machineMap.values()).sort((left, right) => left.machine.start - right.machine.start)
+        machines: Array.from(machineMap.values()).sort((left, right) => left.machine.start - right.machine.start),
+        sections: Array.from(sectionMap.values()).sort((left, right) => left.section.start - right.section.start)
     };
 }
 
@@ -224,6 +322,30 @@ function getMachineSummaries(text, rawSettings = {}) {
         const candidate = shouldConsiderTag(item.attrs, settings);
         if (candidate.ok) {
             const summary = summaries.get(item.machine.key);
+            if (summary) summary.candidates++;
+        }
+    }
+
+    return Array.from(summaries.values());
+}
+
+function getMachineSectionSummaries(text, rawSettings = {}) {
+    const settings = {
+        mode: "batch",
+        useDbnoStart: false,
+        onlyA: rawSettings.onlyA !== false,
+        onlyMesspunkt: rawSettings.onlyMesspunkt !== false
+    };
+    const scan = scanEquipment(text);
+    const summaries = new Map(scan.sections.map(summary => [summary.section.key, {
+        ...summary,
+        candidates: 0
+    }]));
+
+    for (const item of scan.items) {
+        const candidate = shouldConsiderTag(item.attrs, settings);
+        if (candidate.ok) {
+            const summary = summaries.get(item.section.key);
             if (summary) summary.candidates++;
         }
     }
@@ -254,18 +376,39 @@ function getMachineDiagramData(text, rawSettings = {}) {
         messpunkt: summary.messpunkt,
         placeholders: summary.placeholders,
         candidateCount: 0,
+        sections: [],
         equipment: []
     }]));
+    const sectionGroups = new Map();
+
+    for (const sectionSummary of scan.sections) {
+        const group = groups.get(sectionSummary.machine.key);
+        if (!group) continue;
+        const sectionGroup = {
+            section: sectionSummary.section,
+            totalEquipment: sectionSummary.total,
+            messpunkt: sectionSummary.messpunkt,
+            placeholders: sectionSummary.placeholders,
+            candidateCount: 0,
+            equipment: []
+        };
+        group.sections.push(sectionGroup);
+        sectionGroups.set(sectionSummary.section.key, sectionGroup);
+    }
 
     for (const item of scan.items) {
         if (onlyMesspunkt && item.attrs.type !== "Messpunkt") continue;
         const group = groups.get(item.machine.key);
         if (!group) continue;
+        const sectionGroup = sectionGroups.get(item.section.key);
         const candidate = shouldConsiderTag(item.attrs, settings);
         const isCandidate = candidate.ok;
         const isPlaceholder = hasAPlaceholder(item.attrs);
-        if (isCandidate) group.candidateCount++;
-        group.equipment.push({
+        if (isCandidate) {
+            group.candidateCount++;
+            if (sectionGroup) sectionGroup.candidateCount++;
+        }
+        const equipment = {
             dbno: item.attrs.dbno || "",
             id: item.attrs.id || "",
             txt: item.attrs.txt || "",
@@ -273,7 +416,9 @@ function getMachineDiagramData(text, rawSettings = {}) {
             displayValue: getEquipmentDisplayValue(item.attrs),
             isPlaceholder,
             isCandidate
-        });
+        };
+        group.equipment.push(equipment);
+        if (sectionGroup) sectionGroup.equipment.push(equipment);
     }
 
     const machines = Array.from(groups.values());
@@ -388,18 +533,32 @@ function readMachineSettings(rawSettings = {}) {
     for (const range of ranges) {
         if (!range || range.enabled === false) continue;
         const key = String(range.machineKey || "");
+        const sectionKey = String(range.sectionKey || "");
         const startNumber = String(range.startNumber || "").trim();
         const numberStep = parseStrictPositiveInteger(range.numberStep);
+        const limitText = range.limit === undefined || range.limit === null ? "" : String(range.limit).trim();
+        const limit = limitText === "" ? null : parseStrictPositiveInteger(limitText);
+        const rangeIndex = parseStrictNonNegativeInteger(range.rangeIndex);
+        const machineLabel = String(range.machineLabel || key);
+        const sectionLabel = String(range.sectionLabel || sectionKey || "All sections");
+        const rangeLabel = String(range.rangeLabel || `Group ${rangeIndex === null ? machineRanges.length + 1 : rangeIndex + 1}`);
 
         if (!key) errors.push("Machine range is missing a machine key.");
-        if (!/^\d+$/.test(startNumber)) errors.push(`Start number is required for machine ${cleanExportLogValue(range.machineLabel || key)}.`);
-        if (startNumber.length > MAX_START_NUMBER_DIGITS) errors.push(`Start number must be at most ${MAX_START_NUMBER_DIGITS} digits for machine ${cleanExportLogValue(range.machineLabel || key)}.`);
-        if (numberStep === null) errors.push(`Number step must be a positive whole number for machine ${cleanExportLogValue(range.machineLabel || key)}.`);
-        if (numberStep !== null && numberStep > MAX_NUMBER_STEP) errors.push(`Number step must not exceed ${MAX_NUMBER_STEP} for machine ${cleanExportLogValue(range.machineLabel || key)}.`);
+        if (!/^\d+$/.test(startNumber)) errors.push(`Start number is required for ${cleanExportLogValue(sectionLabel)} ${cleanExportLogValue(rangeLabel)}.`);
+        if (startNumber.length > MAX_START_NUMBER_DIGITS) errors.push(`Start number must be at most ${MAX_START_NUMBER_DIGITS} digits for ${cleanExportLogValue(sectionLabel)} ${cleanExportLogValue(rangeLabel)}.`);
+        if (numberStep === null) errors.push(`Number step must be a positive whole number for ${cleanExportLogValue(sectionLabel)} ${cleanExportLogValue(rangeLabel)}.`);
+        if (numberStep !== null && numberStep > MAX_NUMBER_STEP) errors.push(`Number step must not exceed ${MAX_NUMBER_STEP} for ${cleanExportLogValue(sectionLabel)} ${cleanExportLogValue(rangeLabel)}.`);
+        if (limitText !== "" && limit === null) errors.push(`Count must be a positive whole number or blank for ${cleanExportLogValue(sectionLabel)} ${cleanExportLogValue(rangeLabel)}.`);
+        if (limit !== null && limit > MAX_REPLACEMENTS) errors.push(`Count must not exceed ${MAX_REPLACEMENTS} for ${cleanExportLogValue(sectionLabel)} ${cleanExportLogValue(rangeLabel)}.`);
 
         machineRanges.push({
             machineKey: key,
-            machineLabel: String(range.machineLabel || key),
+            sectionKey,
+            machineLabel,
+            sectionLabel,
+            rangeLabel,
+            rangeIndex: rangeIndex === null ? machineRanges.length : rangeIndex,
+            limit,
             startNumber,
             numberStep,
             enabled: true
@@ -426,8 +585,22 @@ function buildMachinePlan(text, rawSettings = {}) {
     }
 
     const scan = scanEquipment(text);
-    const rangeMap = new Map(settings.machineRanges.map(range => [range.machineKey, range]));
-    const counters = new Map(settings.machineRanges.map(range => [range.machineKey, 0]));
+    const rangesBySection = new Map();
+    const fallbackRangesByMachine = new Map();
+    for (const range of settings.machineRanges) {
+        const map = range.sectionKey ? rangesBySection : fallbackRangesByMachine;
+        const key = range.sectionKey ? `${range.machineKey}|${range.sectionKey}` : range.machineKey;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(range);
+    }
+    for (const ranges of [...rangesBySection.values(), ...fallbackRangesByMachine.values()]) {
+        ranges.sort((left, right) => left.rangeIndex - right.rangeIndex);
+    }
+    const sectionCounters = new Map();
+    const rangeCounters = new Map();
+    const sectionCandidateTotals = new Map();
+    const sectionReplacementTotals = new Map();
+    const groupLabels = new Map();
     const rows = [];
     const replacements = [];
     const warnings = [];
@@ -439,17 +612,32 @@ function buildMachinePlan(text, rawSettings = {}) {
     };
 
     for (const item of scan.items) {
-        const range = rangeMap.get(item.machine.key);
-        if (!range) continue;
         const candidate = shouldConsiderTag(item.attrs, candidateSettings);
         if (!candidate.ok) continue;
+        const sectionKey = `${item.machine.key}|${item.section.key}`;
+        const hasSectionRanges = rangesBySection.has(sectionKey);
+        const groupKey = hasSectionRanges ? sectionKey : item.machine.key;
+        const ranges = hasSectionRanges ? rangesBySection.get(sectionKey) : fallbackRangesByMachine.get(item.machine.key) || [];
+        if (ranges.length === 0) continue;
 
-        const offset = counters.get(item.machine.key) || 0;
-        const newValue = incrementDigitString(range.startNumber, offset, range.numberStep);
+        const sectionOffset = sectionCounters.get(groupKey) || 0;
+        sectionCandidateTotals.set(groupKey, (sectionCandidateTotals.get(groupKey) || 0) + 1);
+        groupLabels.set(groupKey, hasSectionRanges ? getSectionTitle(item.section) : getMachineTitle(item.machine));
+        const range = findRangeForOffset(ranges, sectionOffset);
+        sectionCounters.set(groupKey, sectionOffset + 1);
+        if (!range) continue;
+
+        const rangeKey = `${groupKey}|${range.rangeIndex}`;
+        const rangeOffset = rangeCounters.get(rangeKey) || 0;
+        const newValue = incrementDigitString(range.startNumber, rangeOffset, range.numberStep);
         const machineTitle = getMachineTitle(item.machine);
+        const sectionTitle = getSectionTitle(item.section);
         const row = {
             machineKey: item.machine.key,
             machine: machineTitle,
+            sectionKey: item.section.key,
+            section: sectionTitle,
+            range: range.rangeLabel,
             dbno: item.attrs.dbno || "",
             oldId: item.attrs.id || "",
             oldTxt: item.attrs.txt || "",
@@ -477,13 +665,22 @@ function buildMachinePlan(text, rawSettings = {}) {
                 errors: [`Machine range replacements must not exceed ${MAX_REPLACEMENTS}.`]
             };
         }
-        counters.set(item.machine.key, offset + 1);
+        rangeCounters.set(rangeKey, rangeOffset + 1);
+        sectionReplacementTotals.set(groupKey, (sectionReplacementTotals.get(groupKey) || 0) + 1);
     }
 
     for (const range of settings.machineRanges) {
-        const count = counters.get(range.machineKey) || 0;
+        const rangeGroupKey = range.sectionKey ? `${range.machineKey}|${range.sectionKey}` : range.machineKey;
+        const rangeKey = `${rangeGroupKey}|${range.rangeIndex}`;
+        const count = rangeCounters.get(rangeKey) || 0;
         if (count === 0) {
-            warnings.push(`No matching A/a equipment was found for machine ${range.machineLabel}.`);
+            warnings.push(`No matching A/a equipment was numbered for ${range.sectionLabel} ${range.rangeLabel}.`);
+        }
+    }
+    for (const [sectionKey, candidateCount] of sectionCandidateTotals.entries()) {
+        const replacedCount = sectionReplacementTotals.get(sectionKey) || 0;
+        if (replacedCount < candidateCount) {
+            warnings.push(`${candidateCount - replacedCount} matching A/a equipment item(s) were not numbered for ${groupLabels.get(sectionKey) || sectionKey}.`);
         }
     }
 
@@ -500,6 +697,16 @@ function buildMachinePlan(text, rawSettings = {}) {
     }
 
     return { settings, rows, replacements, warnings, errors: [] };
+}
+
+function findRangeForOffset(ranges, offset) {
+    let remainingOffset = offset;
+    for (const range of ranges) {
+        if (range.limit === null) return range;
+        if (remainingOffset < range.limit) return range;
+        remainingOffset -= range.limit;
+    }
+    return null;
 }
 
 function applyMachinePlan(text, rawSettings = {}) {
@@ -593,13 +800,15 @@ function buildExportLog(details = {}) {
 
     if (replacements.length > 0) {
         lines.push("");
-        lines.push(["#", "machine", "dbno", "old id", "old txt", "new id", "new txt"].join("\t"));
+        lines.push(["#", "machine", "section", "range", "dbno", "old id", "old txt", "new id", "new txt"].join("\t"));
         replacements.forEach((replacement, index) => {
             const row = replacement.row || {};
             const newValue = cleanExportLogValue(row.newValue);
             lines.push([
                 index + 1,
                 cleanExportLogValue(row.machine),
+                cleanExportLogValue(row.section),
+                cleanExportLogValue(row.range),
                 cleanExportLogValue(row.dbno),
                 cleanExportLogValue(row.oldId),
                 cleanExportLogValue(row.oldTxt),
@@ -640,7 +849,11 @@ if (typeof module !== "undefined") {
         readSettings,
         getEquipmentStats,
         getMachineSummaries,
+        getMachineSectionSummaries,
         getMachineDiagramData,
+        getMachineTitle,
+        getSectionTitle,
+        getMachineSectionTitle,
         buildPlan,
         applyPlan,
         buildMachinePlan,

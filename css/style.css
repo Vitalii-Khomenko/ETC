@@ -272,6 +272,35 @@ input[type="radio"] {
     padding: 10px 12px 12px;
 }
 
+.section-block {
+    border-top: 1px solid #edf0ef;
+}
+
+.section-block:first-of-type {
+    border-top: 0;
+}
+
+.section-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 12px 0;
+}
+
+.section-title {
+    color: #40504b;
+    font-size: 0.84rem;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+}
+
+.section-counts {
+    color: var(--muted);
+    font-size: 0.76rem;
+    white-space: nowrap;
+}
+
 .equipment-chip {
     display: inline-flex;
     max-width: 100%;
@@ -433,7 +462,7 @@ th {
 }
 
 .machine-table {
-    min-width: 820px;
+    min-width: 1080px;
     margin-bottom: 14px;
 }
 
