@@ -43,6 +43,7 @@ def run_ui_defaults_case() -> dict:
     result["scriptCreatesNoNumberInputs"] = 'input.type = "number"' not in main_js
     result["machineRangeEditorIsCompact"] = "<th>Count</th>" not in html and "<th>Start number</th>" not in html
     result["machineRangeEditorUsesBlocks"] = 'id="machineBody" class="machine-range-list"' in html and "machine-range-machine" in main_js
+    result["machineRangeEditorFiltersMatchedMachines"] = "filter(group => group.candidateCount > 0)" in main_js and "Machines with matches:" in main_js
     result["groupCountRendersBelowSection"] = "function createRangeGroupElement" in main_js and "machine-groups-row" in main_js
     result["groupCountReadBeforeRerender"] = existing_pos < clear_pos
     result["runFlushesGroupEdits"] = "function getFreshSettingsForRun" in main_js and "renderMachineRangesNow();" in main_js
@@ -606,6 +607,7 @@ def main() -> None:
     assert_true(ui_defaults["scriptCreatesNoNumberInputs"], "dynamic numeric inputs should not use browser spinner controls")
     assert_true(ui_defaults["machineRangeEditorIsCompact"], "machine range editor should keep group fields below the section row")
     assert_true(ui_defaults["machineRangeEditorUsesBlocks"], "machine range editor should use grouped machine and section blocks")
+    assert_true(ui_defaults["machineRangeEditorFiltersMatchedMachines"], "machine range editor should show only machines with replacement matches")
     assert_true(ui_defaults["groupCountRendersBelowSection"], "group count should render compact group fields below each section")
     assert_true(ui_defaults["groupCountReadBeforeRerender"], "group count should be read before rerendering clears the table")
     assert_true(ui_defaults["runFlushesGroupEdits"], "preview and replace should apply pending group count edits before reading settings")

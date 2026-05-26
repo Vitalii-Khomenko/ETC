@@ -28,7 +28,7 @@ python scripts/run_privacy_gate.py
 | Quantity limit | Range mode stops after the requested quantity. |
 | Machine detection | `BUILDING` blocks are detected as machine groups and report their own matching `A`/`a` counts. |
 | CIRCUIT section detection | Open `CIRCUIT` blocks are detected as sections inside each `BUILDING` machine. |
-| Machine ranges | Enabled machine sections use independent start numbers and number steps while preserving file order inside each section. |
+| Machine ranges | The replacement editor shows only machines with matching `A`/`a` equipment, and enabled machine sections use independent start numbers and number steps while preserving file order inside each section. |
 | Split section ranges | A section can be split into multiple numbering groups with fixed counts and a blank final count for remaining matches. |
 | Compact group editor | Group counts are entered on each machine section block, and group fields render below the section without browser spinner controls. |
 | Group count persistence | The current `Groups` value is read before the section editor is redrawn, so entering `2` adds a second group row instead of resetting to `1`. |
