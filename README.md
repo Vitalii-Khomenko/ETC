@@ -65,15 +65,17 @@ numbered by that subgroup. A blank `Count` means "all remaining tags in this
 section". For example, a section with 40 matches can use three groups: count
 `5`, count `15`, and a blank final count for the remaining 20.
 
-The section table stays compact: `Groups` is entered on the section row, and
-the group `Count`, `Start`, `Step`, and preview fields appear below that row.
-Digit fields use plain text inputs with numeric keyboard hints instead of
-browser spinner controls.
+The section range editor is grouped by machine. Each machine block lists its
+sections, `Groups` is entered on the section header, and the group `Count`,
+`Start`, `Step`, and preview fields appear directly below that section. Sections
+without replacement matches remain visible for orientation, but their numbering
+fields are disabled. Digit fields use plain text inputs with numeric keyboard
+hints instead of browser spinner controls.
 
 The top layout switch provides `Phone` and `Laptop` modes. Phone mode keeps the
-single-column field layout for smartphone use. Laptop mode uses a wider
-two-column workspace on larger screens, with file and replacement controls on
-the left and review content on the right.
+single-column field layout for smartphone use. Laptop mode keeps the same
+vertical workflow but makes the workspace much wider so the controls adapt to
+the browser window without being squeezed.
 
 The `Machine Diagram` tab shows the same grouping visually. Each machine is a
 compact block with its `CIRCUIT` sections inside it, and each shown equipment

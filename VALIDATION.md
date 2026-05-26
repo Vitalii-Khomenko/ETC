@@ -30,9 +30,9 @@ python scripts/run_privacy_gate.py
 | CIRCUIT section detection | Open `CIRCUIT` blocks are detected as sections inside each `BUILDING` machine. |
 | Machine ranges | Enabled machine sections use independent start numbers and number steps while preserving file order inside each section. |
 | Split section ranges | A section can be split into multiple numbering groups with fixed counts and a blank final count for remaining matches. |
-| Compact group editor | Group counts are entered on each section row, and group fields render below the section without browser spinner controls. |
-| Group count persistence | The current `Groups` value is read before the section table is redrawn, so entering `2` adds a second group row instead of resetting to `1`. |
-| Layout modes | The top `Phone` / `Laptop` switch changes between the smartphone field layout and a wider two-column laptop layout. |
+| Compact group editor | Group counts are entered on each machine section block, and group fields render below the section without browser spinner controls. |
+| Group count persistence | The current `Groups` value is read before the section editor is redrawn, so entering `2` adds a second group row instead of resetting to `1`. |
+| Layout modes | The top `Phone` / `Laptop` switch changes between the smartphone field layout and a wider single-column laptop layout. |
 | Machine diagram | The diagram data groups shown equipment by machine and CIRCUIT section and displays one-sided placeholder values such as `A / 3313616`. |
 | Diagram disclosure | Machine and section lists render as collapsible disclosures; inactive lists are collapsed by default and hidden section equipment flows override flex display. |
 | Replaced-number highlight | Numbers changed by the last replacement plan are highlighted in green in the machine diagram. |

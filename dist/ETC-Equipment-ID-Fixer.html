@@ -548,21 +548,6 @@ th {
     font-weight: 750;
 }
 
-.machine-table {
-    min-width: 0;
-    margin-bottom: 14px;
-}
-
-.machine-table input[type="text"] {
-    min-height: 40px;
-    padding: 8px 9px;
-    font-size: 15px;
-}
-
-.machine-table input[type="checkbox"] {
-    margin-right: 0;
-}
-
 .machine-name {
     font-weight: 700;
 }
@@ -581,6 +566,72 @@ th {
     color: var(--muted);
     font-size: 0.8rem;
     font-weight: 500;
+}
+
+.machine-range-list {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.machine-range-machine {
+    border: 1px solid #dfe7e4;
+    border-radius: 8px;
+    background: #fbfcfb;
+    overflow: hidden;
+}
+
+.machine-range-machine-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: start;
+    padding: 10px 12px;
+    border-bottom: 1px solid #edf0ef;
+    background: #f4f8f6;
+}
+
+.machine-range-stats,
+.range-section-stats {
+    color: var(--muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.range-section-card {
+    display: grid;
+    gap: 8px;
+    padding: 10px 12px 12px;
+    border-top: 1px solid #edf0ef;
+}
+
+.range-section-card:first-of-type {
+    border-top: 0;
+}
+
+.range-section-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: end;
+}
+
+.range-section-title {
+    color: #40504b;
+    font-size: 0.9rem;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+}
+
+.range-group-control {
+    display: grid;
+    grid-template-columns: auto 78px;
+    gap: 7px;
+    align-items: center;
+    margin: 0;
+    color: #4c5a55;
+    font-size: 0.78rem;
+    font-weight: 750;
 }
 
 .range-group-count {
@@ -681,33 +732,12 @@ th {
 
 @media (min-width: 900px) {
     body[data-layout-mode="laptop"] .container {
-        display: grid;
-        grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
-        gap: 14px;
-        max-width: 1320px;
+        width: 100%;
+        max-width: min(1480px, calc(100vw - 32px));
     }
 
     body[data-layout-mode="laptop"] header {
-        grid-column: 1 / -1;
         margin-bottom: 2px;
-    }
-
-    body[data-layout-mode="laptop"] .card {
-        margin-bottom: 0;
-    }
-
-    body[data-layout-mode="laptop"] section.card:nth-of-type(1),
-    body[data-layout-mode="laptop"] section.card:nth-of-type(2) {
-        grid-column: 1;
-    }
-
-    body[data-layout-mode="laptop"] section.card:nth-of-type(3) {
-        grid-column: 2;
-        grid-row: 2 / span 2;
-    }
-
-    body[data-layout-mode="laptop"] section.card:nth-of-type(4) {
-        grid-column: 1 / -1;
     }
 
     body[data-layout-mode="laptop"] .action-row {
@@ -715,13 +745,12 @@ th {
     }
 
     body[data-layout-mode="laptop"] .diagram-grid {
-        max-height: 62dvh;
-        overflow-y: auto;
-        padding-right: 4px;
-        scrollbar-width: thin;
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
     }
 
-    body[data-layout-mode="laptop"] .machine-table input[type="text"] {
+    body[data-layout-mode="laptop"] .range-group input[type="text"] {
         min-height: 36px;
     }
 
@@ -749,6 +778,21 @@ th {
 }
 
 @media (max-width: 620px) {
+    .machine-range-machine-header,
+    .range-section-header {
+        grid-template-columns: 1fr;
+    }
+
+    .machine-range-stats,
+    .range-section-stats {
+        white-space: normal;
+    }
+
+    .range-group-control {
+        grid-template-columns: minmax(0, 1fr) 78px;
+        width: 100%;
+    }
+
     .range-group {
         grid-template-columns: 38px minmax(58px, 0.7fr) minmax(92px, 1fr) minmax(58px, 0.65fr);
     }
@@ -824,19 +868,8 @@ th {
             <div id="machineRangesPanel">
                 <h3>Machine ranges</h3>
                 <div id="machineSummary" class="summary-box" aria-live="polite">No file selected.</div>
-                <div class="table-wrap">
-                    <table class="machine-table">
-                        <thead>
-                            <tr>
-                                <th>Machine / section</th>
-                                <th>Matches</th>
-                                <th>Groups</th>
-                            </tr>
-                        </thead>
-                        <tbody id="machineBody">
-                            <tr><td colspan="3">No machine data.</td></tr>
-                        </tbody>
-                    </table>
+                <div id="machineBody" class="machine-range-list">
+                    <div class="empty-machine">No machine data.</div>
                 </div>
             </div>
 
@@ -2320,7 +2353,7 @@ function computeRangeCounts(totalCount, entries) {
 
 function getExistingMachineRangeValues() {
     const values = new Map();
-    for (const row of Array.from(document.querySelectorAll("#machineBody tr.machine-section-row[data-section-key]"))) {
+    for (const row of Array.from(document.querySelectorAll("#machineBody .machine-section-row[data-section-key]"))) {
         const sectionKey = row.dataset.sectionKey;
         if (!values.has(sectionKey)) {
             values.set(sectionKey, {
@@ -2477,32 +2510,26 @@ function renderMachineRanges(options = {}) {
 
     if (!currentContent || !loadedFile) {
         summaryEl.textContent = "No file selected.";
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 3;
-        td.textContent = "No machine data.";
-        tr.appendChild(td);
-        body.appendChild(tr);
+        const empty = document.createElement("div");
+        empty.className = "empty-machine";
+        empty.textContent = "No machine data.";
+        body.appendChild(empty);
         return;
     }
 
-    const allSummaries = getMachineSectionSummaries(currentContent, {
+    const diagramData = getMachineDiagramData(currentContent, {
         onlyA: byId("onlyA").checked,
-        onlyMesspunkt: byId("onlyMesspunkt").checked,
-        numberStep: byId("numberStep").value
+        onlyMesspunkt: byId("onlyMesspunkt").checked
     });
-    const summaries = allSummaries.filter(summary => summary.candidates > 0);
-    const machineCount = new Set(allSummaries.map(summary => summary.machine.key)).size;
-    const totalCandidates = summaries.reduce((sum, summary) => sum + summary.candidates, 0);
-    summaryEl.textContent = `Machines: ${machineCount} | Sections with matches: ${summaries.length} | Matches to replace: ${totalCandidates}`;
+    const visibleMachines = diagramData.machines.filter(group => group.sections.some(section => section.equipment.length > 0));
+    const sectionCount = visibleMachines.reduce((sum, group) => sum + group.sections.filter(section => section.equipment.length > 0).length, 0);
+    summaryEl.textContent = `Machines: ${diagramData.totals.machines} | Sections shown: ${sectionCount} | Matches to replace: ${diagramData.totals.candidates}`;
 
-    if (summaries.length === 0) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 3;
-        td.textContent = "No matching A/a equipment was found in CIRCUIT sections.";
-        tr.appendChild(td);
-        body.appendChild(tr);
+    if (visibleMachines.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty-machine";
+        empty.textContent = "No machine sections were found for the current filters.";
+        body.appendChild(empty);
         return;
     }
 
@@ -2512,88 +2539,122 @@ function renderMachineRanges(options = {}) {
     const globalStep = canAutoFill ? Number(rawGlobalStep) : null;
     let fillCursor = canAutoFill ? globalStart : "";
 
-    for (const summary of summaries) {
-        const machine = summary.machine;
-        const section = summary.section;
-        const count = summary.candidates;
-        const existing = existingValues.get(section.key);
-        const groupCount = Math.min(MAX_RANGE_GROUPS, Math.max(1, existing?.groupCount || 1));
-        const entries = [];
-        for (let index = 0; index < groupCount; index++) {
-            const existingRange = existing?.ranges.get(index);
-            entries.push({
-                enabled: existingRange?.enabled !== false,
-                limit: existingRange?.limit || "",
-                startNumber: existingRange?.startNumber || "",
-                numberStep: existingRange?.numberStep || byId("numberStep").value || DEFAULT_NUMBER_STEP
-            });
-        }
-        const counts = computeRangeCounts(count, entries);
-        if (canAutoFill) {
-            for (let index = 0; index < entries.length; index++) {
-                if (counts[index] > 0) {
-                    entries[index].startNumber = fillCursor;
-                    fillCursor = incrementDigitString(fillCursor, counts[index], globalStep) || fillCursor;
-                }
-            }
-        }
+    const replacementLookup = getAppliedReplacementLookup();
 
-        const sectionRow = document.createElement("tr");
-        sectionRow.className = "machine-section-row";
-        sectionRow.dataset.sectionKey = section.key;
+    for (const group of visibleMachines) {
+        const machine = group.machine;
+        const visibleSections = group.sections.filter(section => section.equipment.length > 0);
+        const machineReplacedCount = visibleSections.reduce((sum, section) => (
+            sum + section.equipment.filter(equipment => wasEquipmentReplaced(replacementLookup, section.section.key, equipment)).length
+        ), 0);
 
-        const machineTd = document.createElement("td");
-        const name = document.createElement("span");
+        const machineBlock = document.createElement("article");
+        machineBlock.className = "machine-range-machine";
+
+        const machineHeader = document.createElement("div");
+        machineHeader.className = "machine-range-machine-header";
+        const titleWrap = document.createElement("div");
+        const name = document.createElement("div");
         name.className = "machine-name";
         name.textContent = machine.id || "Unnamed BUILDING";
         const meta = document.createElement("span");
         meta.className = "machine-meta";
-        meta.textContent = [machine.txt && machine.txt !== machine.id ? machine.txt : "", machine.dbno ? `dbno ${machine.dbno}` : "", getSectionTitle(section)].filter(Boolean).join(" | ");
-        machineTd.appendChild(name);
-        if (meta.textContent) machineTd.appendChild(meta);
-        sectionRow.appendChild(machineTd);
+        meta.textContent = [machine.txt && machine.txt !== machine.id ? machine.txt : "", machine.dbno ? `dbno ${machine.dbno}` : ""].filter(Boolean).join(" | ");
+        titleWrap.appendChild(name);
+        if (meta.textContent) titleWrap.appendChild(meta);
+        const machineStats = document.createElement("div");
+        machineStats.className = "machine-range-stats";
+        machineStats.textContent = `${group.equipment.length} shown | ${group.candidateCount} match | ${machineReplacedCount} replaced`;
+        machineHeader.appendChild(titleWrap);
+        machineHeader.appendChild(machineStats);
+        machineBlock.appendChild(machineHeader);
 
-        const countTd = document.createElement("td");
-        countTd.textContent = String(count);
-        sectionRow.appendChild(countTd);
+        for (const sectionGroup of visibleSections) {
+            const section = sectionGroup.section;
+            const count = sectionGroup.candidateCount;
+            const sectionReplacedCount = sectionGroup.equipment.filter(equipment => wasEquipmentReplaced(replacementLookup, section.key, equipment)).length;
+            const existing = existingValues.get(section.key);
+            const groupCount = Math.min(MAX_RANGE_GROUPS, Math.max(1, existing?.groupCount || 1));
+            const entries = [];
+            for (let index = 0; index < groupCount; index++) {
+                const existingRange = existing?.ranges.get(index);
+                entries.push({
+                    enabled: count > 0 && existingRange?.enabled !== false,
+                    limit: existingRange?.limit || "",
+                    startNumber: existingRange?.startNumber || "",
+                    numberStep: existingRange?.numberStep || byId("numberStep").value || DEFAULT_NUMBER_STEP
+                });
+            }
+            const counts = computeRangeCounts(count, entries);
+            if (canAutoFill) {
+                for (let index = 0; index < entries.length; index++) {
+                    if (counts[index] > 0) {
+                        entries[index].startNumber = fillCursor;
+                        fillCursor = incrementDigitString(fillCursor, counts[index], globalStep) || fillCursor;
+                    }
+                }
+            }
 
-        const groupsTd = document.createElement("td");
-        const groupInput = document.createElement("input");
-        groupInput.type = "text";
-        groupInput.className = "range-group-count";
-        groupInput.inputMode = "numeric";
-        groupInput.autocomplete = "off";
-        groupInput.spellcheck = false;
-        groupInput.value = String(groupCount);
-        groupsTd.appendChild(groupInput);
-        sectionRow.appendChild(groupsTd);
-        body.appendChild(sectionRow);
+            const sectionRow = document.createElement("section");
+            sectionRow.className = "machine-section-row range-section-card";
+            sectionRow.dataset.sectionKey = section.key;
 
-        const groupsRow = document.createElement("tr");
-        groupsRow.className = "machine-groups-row";
-        groupsRow.dataset.sectionKey = section.key;
-        const groupsCell = document.createElement("td");
-        groupsCell.colSpan = 3;
-        const groupWrap = document.createElement("div");
-        groupWrap.className = "range-groups";
+            const sectionHeader = document.createElement("div");
+            sectionHeader.className = "range-section-header";
+            const sectionInfo = document.createElement("div");
+            const sectionName = document.createElement("div");
+            sectionName.className = "range-section-title";
+            sectionName.textContent = getSectionTitle(section);
+            const sectionStats = document.createElement("div");
+            sectionStats.className = "range-section-stats";
+            sectionStats.textContent = `${sectionGroup.equipment.length} shown | ${count} match | ${sectionReplacedCount} replaced`;
+            sectionInfo.appendChild(sectionName);
+            sectionInfo.appendChild(sectionStats);
 
-        for (let index = 0; index < entries.length; index++) {
-            const entry = entries[index];
-            const rangeCount = counts[index] || 0;
-            const rangeLabel = `Group ${index + 1}`;
-            groupWrap.appendChild(createRangeGroupElement({
-                machine,
-                section,
-                index,
-                rangeLabel,
-                totalCount: count,
-                rangeCount,
-                entry
-            }));
+            const groupControl = document.createElement("label");
+            groupControl.className = "range-group-control";
+            const groupLabel = document.createElement("span");
+            groupLabel.textContent = "Groups";
+            const groupInput = document.createElement("input");
+            groupInput.type = "text";
+            groupInput.className = "range-group-count";
+            groupInput.inputMode = "numeric";
+            groupInput.autocomplete = "off";
+            groupInput.spellcheck = false;
+            groupInput.value = String(groupCount);
+            groupInput.disabled = count === 0;
+            groupControl.appendChild(groupLabel);
+            groupControl.appendChild(groupInput);
+            sectionHeader.appendChild(sectionInfo);
+            sectionHeader.appendChild(groupControl);
+            sectionRow.appendChild(sectionHeader);
+
+            const groupsRow = document.createElement("div");
+            groupsRow.className = "machine-groups-row";
+            groupsRow.dataset.sectionKey = section.key;
+            const groupWrap = document.createElement("div");
+            groupWrap.className = "range-groups";
+
+            for (let index = 0; index < entries.length; index++) {
+                const entry = entries[index];
+                const rangeCount = counts[index] || 0;
+                const rangeLabel = `Group ${index + 1}`;
+                groupWrap.appendChild(createRangeGroupElement({
+                    machine,
+                    section,
+                    index,
+                    rangeLabel,
+                    totalCount: count,
+                    rangeCount,
+                    entry
+                }));
+            }
+            groupsRow.appendChild(groupWrap);
+            sectionRow.appendChild(groupsRow);
+            machineBlock.appendChild(sectionRow);
         }
-        groupsCell.appendChild(groupWrap);
-        groupsRow.appendChild(groupsCell);
-        body.appendChild(groupsRow);
+
+        body.appendChild(machineBlock);
     }
 
     body.querySelectorAll(".range-limit, .range-start, .range-step, .range-enabled").forEach(input => {

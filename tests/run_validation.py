@@ -38,10 +38,11 @@ def run_ui_defaults_case() -> dict:
         'aria-label="Layout mode"' in html
     )
     result["layoutModeScriptExists"] = "function setLayoutMode" in main_js and "function getDefaultLayoutMode" in main_js
-    result["laptopLayoutCssExists"] = 'body[data-layout-mode="laptop"] .container' in css and "grid-template-columns" in css
+    result["laptopLayoutCssExists"] = 'body[data-layout-mode="laptop"] .container' in css and "max-width: min(1480px" in css
     result["htmlHasNoNumberInputs"] = 'type="number"' not in html
     result["scriptCreatesNoNumberInputs"] = 'input.type = "number"' not in main_js
-    result["machineRangeTableIsCompact"] = "<th>Count</th>" not in html and "<th>Start number</th>" not in html
+    result["machineRangeEditorIsCompact"] = "<th>Count</th>" not in html and "<th>Start number</th>" not in html
+    result["machineRangeEditorUsesBlocks"] = 'id="machineBody" class="machine-range-list"' in html and "machine-range-machine" in main_js
     result["groupCountRendersBelowSection"] = "function createRangeGroupElement" in main_js and "machine-groups-row" in main_js
     result["groupCountReadBeforeRerender"] = existing_pos < clear_pos
     result["runFlushesGroupEdits"] = "function getFreshSettingsForRun" in main_js and "renderMachineRangesNow();" in main_js
@@ -600,10 +601,11 @@ def main() -> None:
     assert_true(ui_defaults["fillFromStartButtonRemoved"], "global fill button should be removed from the operator UI")
     assert_true(ui_defaults["layoutModeToggleExists"], "phone and laptop layout mode controls should exist")
     assert_true(ui_defaults["layoutModeScriptExists"], "layout mode controls should update the document layout mode")
-    assert_true(ui_defaults["laptopLayoutCssExists"], "laptop layout mode should provide a wider two-column layout")
+    assert_true(ui_defaults["laptopLayoutCssExists"], "laptop layout mode should provide a wider single-column layout")
     assert_true(ui_defaults["htmlHasNoNumberInputs"], "HTML numeric inputs should use text inputs with numeric keyboard hints")
     assert_true(ui_defaults["scriptCreatesNoNumberInputs"], "dynamic numeric inputs should not use browser spinner controls")
-    assert_true(ui_defaults["machineRangeTableIsCompact"], "machine range table should keep group fields below the section row")
+    assert_true(ui_defaults["machineRangeEditorIsCompact"], "machine range editor should keep group fields below the section row")
+    assert_true(ui_defaults["machineRangeEditorUsesBlocks"], "machine range editor should use grouped machine and section blocks")
     assert_true(ui_defaults["groupCountRendersBelowSection"], "group count should render compact group fields below each section")
     assert_true(ui_defaults["groupCountReadBeforeRerender"], "group count should be read before rerendering clears the table")
     assert_true(ui_defaults["runFlushesGroupEdits"], "preview and replace should apply pending group count edits before reading settings")
