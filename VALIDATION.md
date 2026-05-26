@@ -30,6 +30,7 @@ python scripts/run_privacy_gate.py
 | CIRCUIT section detection | Open `CIRCUIT` blocks are detected as sections inside each `BUILDING` machine. |
 | Machine ranges | Enabled machine sections use independent start numbers and number steps while preserving file order inside each section. |
 | Split section ranges | A section can be split into multiple numbering groups with fixed counts and a blank final count for remaining matches. |
+| Compact group editor | Group counts are entered on each section row, and group fields render below the section without browser spinner controls. |
 | Machine diagram | The diagram data groups shown equipment by machine and CIRCUIT section and displays one-sided placeholder values such as `A / 3313616`. |
 | Safety filter | Existing numeric IDs are not overwritten while `Only replace id/txt with A/a` is enabled and neither attribute is `A`/`a`. |
 | Strict input parsing | Mixed numeric text such as `6abc` is rejected instead of being treated as `6`. |

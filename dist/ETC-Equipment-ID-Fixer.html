@@ -102,8 +102,7 @@ label {
     user-select: none;
 }
 
-input[type="text"],
-input[type="number"] {
+input[type="text"] {
     width: 100%;
     min-height: 48px;
     padding: 11px 12px;
@@ -470,12 +469,11 @@ th {
 }
 
 .machine-table {
-    min-width: 1080px;
+    min-width: 0;
     margin-bottom: 14px;
 }
 
-.machine-table input[type="text"],
-.machine-table input[type="number"] {
+.machine-table input[type="text"] {
     min-height: 40px;
     padding: 8px 9px;
     font-size: 15px;
@@ -489,11 +487,81 @@ th {
     font-weight: 700;
 }
 
+.machine-section-row td {
+    border-bottom: 0;
+    background: #fbfcfb;
+}
+
+.machine-section-row + .machine-groups-row td {
+    padding-top: 0;
+}
+
 .machine-meta {
     display: block;
     color: var(--muted);
     font-size: 0.8rem;
     font-weight: 500;
+}
+
+.range-group-count {
+    max-width: 86px;
+}
+
+.range-groups {
+    display: grid;
+    gap: 7px;
+    max-width: 100%;
+}
+
+.range-group {
+    display: grid;
+    grid-template-columns: 42px minmax(70px, 0.75fr) minmax(116px, 1.2fr) minmax(70px, 0.7fr) minmax(100px, 1fr);
+    gap: 6px;
+    align-items: end;
+    padding: 8px;
+    border: 1px solid #dfe7e4;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.range-group label {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.range-group input[type="text"] {
+    min-height: 38px;
+    padding: 7px 8px;
+    font-size: 15px;
+}
+
+.range-use {
+    display: flex;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+}
+
+.range-use input[type="checkbox"] {
+    margin: 0;
+}
+
+.range-field {
+    min-width: 0;
+}
+
+.range-preview {
+    min-height: 38px;
+    padding: 8px;
+    border: 1px solid #edf0ef;
+    border-radius: 8px;
+    background: #f8faf9;
+    color: #45514d;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.76rem;
+    overflow-wrap: anywhere;
 }
 
 .status-ok {
@@ -548,6 +616,16 @@ th {
     }
 }
 
+@media (max-width: 620px) {
+    .range-group {
+        grid-template-columns: 38px minmax(58px, 0.7fr) minmax(92px, 1fr) minmax(58px, 0.65fr);
+    }
+
+    .range-field.range-preview-field {
+        grid-column: 2 / -1;
+    }
+}
+
 @media (max-width: 420px) {
     body {
         padding: 10px;
@@ -589,14 +667,14 @@ th {
                 </div>
                 <div class="form-group">
                     <label for="numberStep">Number step</label>
-                    <input type="number" id="numberStep" value="1" min="1" inputmode="numeric">
+                    <input type="text" id="numberStep" value="1" inputmode="numeric" autocomplete="off" spellcheck="false">
                 </div>
             </div>
 
             <div class="grid-2">
                 <div class="form-group">
                     <label for="quantity">Quantity</label>
-                    <input type="number" id="quantity" min="1" inputmode="numeric">
+                    <input type="text" id="quantity" inputmode="numeric" autocomplete="off" spellcheck="false">
                 </div>
                 <div class="form-group">
                     <label for="suffix">File suffix</label>
@@ -613,7 +691,7 @@ th {
                 </div>
                 <div class="form-group" id="startDbnoGroup">
                     <label for="startDbno">Start dbno</label>
-                    <input type="number" id="startDbno" min="0" inputmode="numeric">
+                    <input type="text" id="startDbno" inputmode="numeric" autocomplete="off" spellcheck="false">
                 </div>
             </div>
 
@@ -642,18 +720,13 @@ th {
                     <table class="machine-table">
                         <thead>
                             <tr>
-                                <th>Use</th>
                                 <th>Machine / section</th>
                                 <th>Matches</th>
                                 <th>Groups</th>
-                                <th>Count</th>
-                                <th>Start number</th>
-                                <th>Step</th>
-                                <th>Range</th>
                             </tr>
                         </thead>
                         <tbody id="machineBody">
-                            <tr><td colspan="8">No machine data.</td></tr>
+                            <tr><td colspan="3">No machine data.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -689,7 +762,7 @@ th {
                         <thead>
                             <tr>
                                 <th>dbno</th>
-                                <th>machine</th>
+                                <th>machine / section</th>
                                 <th>id</th>
                                 <th>txt</th>
                                 <th>new</th>
@@ -1696,6 +1769,7 @@ let lastPlan = null;
 let lastAppliedPlan = null;
 let hasChanges = false;
 let activeDownloadUrls = [];
+let machineRangeRenderTimer = null;
 const DEFAULT_NUMBER_STEP = "1";
 const MAX_RANGE_GROUPS = 20;
 
@@ -1997,18 +2071,18 @@ async function handleFileSelect(event) {
 }
 
 function getMachineRangeSettings() {
-    const rows = Array.from(document.querySelectorAll("#machineBody tr[data-section-key][data-range-index]"));
-    return rows.map(row => ({
-        machineKey: row.dataset.machineKey,
-        machineLabel: row.dataset.machineLabel,
-        sectionKey: row.dataset.sectionKey,
-        sectionLabel: row.dataset.sectionLabel,
-        rangeIndex: row.dataset.rangeIndex,
-        rangeLabel: row.dataset.rangeLabel,
-        enabled: row.querySelector(".range-enabled")?.checked === true,
-        limit: row.querySelector(".range-limit")?.value || "",
-        startNumber: row.querySelector(".range-start")?.value || "",
-        numberStep: row.querySelector(".range-step")?.value || DEFAULT_NUMBER_STEP
+    const groups = Array.from(document.querySelectorAll("#machineBody .range-group[data-section-key][data-range-index]"));
+    return groups.map(group => ({
+        machineKey: group.dataset.machineKey,
+        machineLabel: group.dataset.machineLabel,
+        sectionKey: group.dataset.sectionKey,
+        sectionLabel: group.dataset.sectionLabel,
+        rangeIndex: group.dataset.rangeIndex,
+        rangeLabel: group.dataset.rangeLabel,
+        enabled: group.querySelector(".range-enabled")?.checked === true,
+        limit: group.querySelector(".range-limit")?.value || "",
+        startNumber: group.querySelector(".range-start")?.value || "",
+        numberStep: group.querySelector(".range-step")?.value || DEFAULT_NUMBER_STEP
     }));
 }
 
@@ -2041,7 +2115,7 @@ function computeRangeCounts(totalCount, entries) {
 
 function getExistingMachineRangeValues() {
     const values = new Map();
-    for (const row of Array.from(document.querySelectorAll("#machineBody tr[data-section-key][data-range-index]"))) {
+    for (const row of Array.from(document.querySelectorAll("#machineBody tr.machine-section-row[data-section-key]"))) {
         const sectionKey = row.dataset.sectionKey;
         if (!values.has(sectionKey)) {
             values.set(sectionKey, {
@@ -2054,48 +2128,136 @@ function getExistingMachineRangeValues() {
         if (groupCountInput) {
             section.groupCount = parsePositiveIntegerInput(groupCountInput.value) || 1;
         }
-        const rangeIndex = Number(row.dataset.rangeIndex || "0");
+    }
+    for (const group of Array.from(document.querySelectorAll("#machineBody .range-group[data-section-key][data-range-index]"))) {
+        const sectionKey = group.dataset.sectionKey;
+        if (!values.has(sectionKey)) {
+            values.set(sectionKey, {
+                groupCount: 1,
+                ranges: new Map()
+            });
+        }
+        const section = values.get(sectionKey);
+        const rangeIndex = Number(group.dataset.rangeIndex || "0");
         section.ranges.set(rangeIndex, {
-            enabled: row.querySelector(".range-enabled")?.checked === true,
-            limit: row.querySelector(".range-limit")?.value || "",
-            startNumber: row.querySelector(".range-start")?.value || "",
-            numberStep: row.querySelector(".range-step")?.value || DEFAULT_NUMBER_STEP
+            enabled: group.querySelector(".range-enabled")?.checked === true,
+            limit: group.querySelector(".range-limit")?.value || "",
+            startNumber: group.querySelector(".range-start")?.value || "",
+            numberStep: group.querySelector(".range-step")?.value || DEFAULT_NUMBER_STEP
         });
     }
     return values;
 }
 
+function scheduleMachineRangeRender() {
+    window.clearTimeout(machineRangeRenderTimer);
+    machineRangeRenderTimer = window.setTimeout(() => {
+        machineRangeRenderTimer = null;
+        renderMachineRanges();
+    }, 450);
+}
+
+function renderMachineRangesNow() {
+    window.clearTimeout(machineRangeRenderTimer);
+    machineRangeRenderTimer = null;
+    renderMachineRanges();
+}
+
+function createRangeField(labelText, inputClassName, value, placeholder = "") {
+    const field = document.createElement("label");
+    field.className = "range-field";
+    const label = document.createElement("span");
+    label.textContent = labelText;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = inputClassName;
+    input.inputMode = "numeric";
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    input.placeholder = placeholder;
+    input.value = value || "";
+    field.appendChild(label);
+    field.appendChild(input);
+    return { field, input };
+}
+
+function createRangeGroupElement(details) {
+    const group = document.createElement("div");
+    group.className = "range-group";
+    group.dataset.machineKey = details.machine.key;
+    group.dataset.machineLabel = getMachineTitle(details.machine);
+    group.dataset.sectionKey = details.section.key;
+    group.dataset.sectionLabel = getSectionTitle(details.section);
+    group.dataset.rangeIndex = String(details.index);
+    group.dataset.rangeLabel = details.rangeLabel;
+    group.dataset.candidateCount = String(details.totalCount);
+
+    const useField = document.createElement("label");
+    useField.className = "range-use";
+    const enabledInput = document.createElement("input");
+    enabledInput.type = "checkbox";
+    enabledInput.className = "range-enabled";
+    enabledInput.checked = details.entry.enabled && details.rangeCount > 0;
+    enabledInput.disabled = details.rangeCount === 0;
+    useField.appendChild(enabledInput);
+    group.appendChild(useField);
+
+    const limit = createRangeField("Count", "range-limit", details.entry.limit, "remaining");
+    limit.input.disabled = details.rangeCount === 0;
+    group.appendChild(limit.field);
+
+    const start = createRangeField("Start", "range-start", details.rangeCount > 0 ? details.entry.startNumber : "");
+    start.input.disabled = details.rangeCount === 0;
+    group.appendChild(start.field);
+
+    const step = createRangeField("Step", "range-step", details.entry.numberStep || DEFAULT_NUMBER_STEP);
+    step.input.disabled = details.rangeCount === 0;
+    group.appendChild(step.field);
+
+    const previewField = document.createElement("div");
+    previewField.className = "range-field range-preview-field";
+    const previewLabel = document.createElement("label");
+    previewLabel.textContent = details.rangeLabel;
+    const preview = document.createElement("div");
+    preview.className = "machine-range-preview range-preview";
+    previewField.appendChild(previewLabel);
+    previewField.appendChild(preview);
+    group.appendChild(previewField);
+
+    return group;
+}
+
 function updateMachineRangeRows() {
     const rowsBySection = new Map();
-    for (const row of Array.from(document.querySelectorAll("#machineBody tr[data-section-key][data-range-index]"))) {
-        const sectionKey = row.dataset.sectionKey;
+    for (const group of Array.from(document.querySelectorAll("#machineBody .range-group[data-section-key][data-range-index]"))) {
+        const sectionKey = group.dataset.sectionKey;
         if (!rowsBySection.has(sectionKey)) rowsBySection.set(sectionKey, []);
-        rowsBySection.get(sectionKey).push(row);
+        rowsBySection.get(sectionKey).push(group);
     }
 
-    for (const rows of rowsBySection.values()) {
-        rows.sort((left, right) => Number(left.dataset.rangeIndex) - Number(right.dataset.rangeIndex));
-        const totalCount = Number(rows[0]?.dataset.candidateCount || "0");
-        const entries = rows.map(row => ({
-            limit: row.querySelector(".range-limit")?.value || ""
+    for (const groups of rowsBySection.values()) {
+        groups.sort((left, right) => Number(left.dataset.rangeIndex) - Number(right.dataset.rangeIndex));
+        const totalCount = Number(groups[0]?.dataset.candidateCount || "0");
+        const entries = groups.map(group => ({
+            limit: group.querySelector(".range-limit")?.value || ""
         }));
         const counts = computeRangeCounts(totalCount, entries);
-        rows.forEach((row, index) => {
+        groups.forEach((group, index) => {
             const count = counts[index] || 0;
-            const start = row.querySelector(".range-start")?.value || "";
-            const step = row.querySelector(".range-step")?.value || DEFAULT_NUMBER_STEP;
-            const preview = row.querySelector(".machine-range-preview");
+            const start = group.querySelector(".range-start")?.value || "";
+            const step = group.querySelector(".range-step")?.value || DEFAULT_NUMBER_STEP;
+            const preview = group.querySelector(".machine-range-preview");
             if (preview) preview.textContent = computeRangePreview(start, count, step);
 
             const disabled = count === 0;
-            const enabledInput = row.querySelector(".range-enabled");
+            const enabledInput = group.querySelector(".range-enabled");
             if (enabledInput) {
                 const wasDisabled = enabledInput.disabled;
                 enabledInput.disabled = disabled;
                 if (disabled) enabledInput.checked = false;
                 if (!disabled && wasDisabled) enabledInput.checked = true;
             }
-            row.querySelectorAll(".range-limit, .range-start, .range-step").forEach(input => {
+            group.querySelectorAll(".range-limit, .range-start, .range-step").forEach(input => {
                 input.disabled = disabled;
             });
         });
@@ -2111,7 +2273,7 @@ function renderMachineRanges(options = {}) {
         summaryEl.textContent = "No file selected.";
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = 8;
+        td.colSpan = 3;
         td.textContent = "No machine data.";
         tr.appendChild(td);
         body.appendChild(tr);
@@ -2132,7 +2294,7 @@ function renderMachineRanges(options = {}) {
     if (summaries.length === 0) {
         const tr = document.createElement("tr");
         const td = document.createElement("td");
-        td.colSpan = 8;
+        td.colSpan = 3;
         td.textContent = "No matching A/a equipment was found in CIRCUIT sections.";
         tr.appendChild(td);
         body.appendChild(tr);
@@ -2171,99 +2333,62 @@ function renderMachineRanges(options = {}) {
             }
         }
 
+        const sectionRow = document.createElement("tr");
+        sectionRow.className = "machine-section-row";
+        sectionRow.dataset.sectionKey = section.key;
+
+        const machineTd = document.createElement("td");
+        const name = document.createElement("span");
+        name.className = "machine-name";
+        name.textContent = machine.id || "Unnamed BUILDING";
+        const meta = document.createElement("span");
+        meta.className = "machine-meta";
+        meta.textContent = [machine.txt && machine.txt !== machine.id ? machine.txt : "", machine.dbno ? `dbno ${machine.dbno}` : "", getSectionTitle(section)].filter(Boolean).join(" | ");
+        machineTd.appendChild(name);
+        if (meta.textContent) machineTd.appendChild(meta);
+        sectionRow.appendChild(machineTd);
+
+        const countTd = document.createElement("td");
+        countTd.textContent = String(count);
+        sectionRow.appendChild(countTd);
+
+        const groupsTd = document.createElement("td");
+        const groupInput = document.createElement("input");
+        groupInput.type = "text";
+        groupInput.className = "range-group-count";
+        groupInput.inputMode = "numeric";
+        groupInput.autocomplete = "off";
+        groupInput.spellcheck = false;
+        groupInput.value = String(groupCount);
+        groupsTd.appendChild(groupInput);
+        sectionRow.appendChild(groupsTd);
+        body.appendChild(sectionRow);
+
+        const groupsRow = document.createElement("tr");
+        groupsRow.className = "machine-groups-row";
+        groupsRow.dataset.sectionKey = section.key;
+        const groupsCell = document.createElement("td");
+        groupsCell.colSpan = 3;
+        const groupWrap = document.createElement("div");
+        groupWrap.className = "range-groups";
+
         for (let index = 0; index < entries.length; index++) {
             const entry = entries[index];
             const rangeCount = counts[index] || 0;
             const rangeLabel = `Group ${index + 1}`;
-            const tr = document.createElement("tr");
-            tr.dataset.machineKey = machine.key;
-            tr.dataset.machineLabel = getMachineTitle(machine);
-            tr.dataset.sectionKey = section.key;
-            tr.dataset.sectionLabel = getSectionTitle(section);
-            tr.dataset.rangeIndex = String(index);
-            tr.dataset.rangeLabel = rangeLabel;
-            tr.dataset.candidateCount = String(count);
-
-            const enabledTd = document.createElement("td");
-            const enabledInput = document.createElement("input");
-            enabledInput.type = "checkbox";
-            enabledInput.className = "range-enabled";
-            enabledInput.checked = entry.enabled && rangeCount > 0;
-            enabledInput.disabled = rangeCount === 0;
-            enabledTd.appendChild(enabledInput);
-            tr.appendChild(enabledTd);
-
-            const machineTd = document.createElement("td");
-            const name = document.createElement("span");
-            name.className = "machine-name";
-            name.textContent = machine.id || "Unnamed BUILDING";
-            const meta = document.createElement("span");
-            meta.className = "machine-meta";
-            meta.textContent = [machine.txt && machine.txt !== machine.id ? machine.txt : "", machine.dbno ? `dbno ${machine.dbno}` : "", getSectionTitle(section)].filter(Boolean).join(" | ");
-            machineTd.appendChild(name);
-            if (meta.textContent) machineTd.appendChild(meta);
-            tr.appendChild(machineTd);
-
-            const countTd = document.createElement("td");
-            countTd.textContent = String(count);
-            tr.appendChild(countTd);
-
-            const groupsTd = document.createElement("td");
-            if (index === 0) {
-                const groupInput = document.createElement("input");
-                groupInput.type = "number";
-                groupInput.className = "range-group-count";
-                groupInput.min = "1";
-                groupInput.max = String(MAX_RANGE_GROUPS);
-                groupInput.inputMode = "numeric";
-                groupInput.value = String(groupCount);
-                groupsTd.appendChild(groupInput);
-            } else {
-                groupsTd.textContent = `${index + 1} of ${groupCount}`;
-            }
-            tr.appendChild(groupsTd);
-
-            const limitTd = document.createElement("td");
-            const limitInput = document.createElement("input");
-            limitInput.type = "number";
-            limitInput.className = "range-limit";
-            limitInput.min = "1";
-            limitInput.inputMode = "numeric";
-            limitInput.placeholder = "remaining";
-            limitInput.value = entry.limit;
-            limitInput.disabled = rangeCount === 0;
-            limitTd.appendChild(limitInput);
-            tr.appendChild(limitTd);
-
-            const startTd = document.createElement("td");
-            const startInput = document.createElement("input");
-            startInput.type = "text";
-            startInput.className = "range-start";
-            startInput.inputMode = "numeric";
-            startInput.autocomplete = "off";
-            startInput.spellcheck = false;
-            startInput.value = rangeCount > 0 ? entry.startNumber : "";
-            startInput.disabled = rangeCount === 0;
-            startTd.appendChild(startInput);
-            tr.appendChild(startTd);
-
-            const stepTd = document.createElement("td");
-            const stepInput = document.createElement("input");
-            stepInput.type = "number";
-            stepInput.className = "range-step";
-            stepInput.min = "1";
-            stepInput.inputMode = "numeric";
-            stepInput.value = entry.numberStep || DEFAULT_NUMBER_STEP;
-            stepInput.disabled = rangeCount === 0;
-            stepTd.appendChild(stepInput);
-            tr.appendChild(stepTd);
-
-            const rangeTd = document.createElement("td");
-            rangeTd.className = "machine-range-preview";
-            tr.appendChild(rangeTd);
-
-            body.appendChild(tr);
+            groupWrap.appendChild(createRangeGroupElement({
+                machine,
+                section,
+                index,
+                rangeLabel,
+                totalCount: count,
+                rangeCount,
+                entry
+            }));
         }
+        groupsCell.appendChild(groupWrap);
+        groupsRow.appendChild(groupsCell);
+        body.appendChild(groupsRow);
     }
 
     body.querySelectorAll(".range-limit, .range-start, .range-step, .range-enabled").forEach(input => {
@@ -2271,7 +2396,8 @@ function renderMachineRanges(options = {}) {
         input.addEventListener("change", updateMachineRangeRows);
     });
     body.querySelectorAll(".range-group-count").forEach(input => {
-        input.addEventListener("change", () => renderMachineRanges());
+        input.addEventListener("input", scheduleMachineRangeRender);
+        input.addEventListener("change", renderMachineRangesNow);
     });
     updateMachineRangeRows();
 }
@@ -2292,6 +2418,13 @@ function fillMachineRangesFromGlobal() {
     logOk("Machine ranges filled from the global start number.");
 }
 
+function getFreshSettingsForRun() {
+    if (currentMode() === "machine" && currentContent && loadedFile) {
+        renderMachineRangesNow();
+    }
+    return getSettings();
+}
+
 function previewChanges() {
     if (!loadedFile) {
         logWarn("Select a file first.");
@@ -2299,7 +2432,7 @@ function previewChanges() {
     }
     if (!validateOutputSuffix()) return;
 
-    const settings = getSettings();
+    const settings = getFreshSettingsForRun();
     const plan = settings.mode === "machine" ? buildMachinePlan(currentContent, settings) : buildPlan(currentContent, settings);
     lastPlan = plan;
     if (plan.errors.length > 0) {
@@ -2333,7 +2466,7 @@ function applyChanges() {
     }
     if (!validateOutputSuffix()) return;
 
-    const settings = getSettings();
+    const settings = getFreshSettingsForRun();
     const result = settings.mode === "machine" ? applyMachinePlan(currentContent, settings) : applyPlan(currentContent, settings);
     lastPlan = result.plan;
     renderPreview(result.plan.rows);

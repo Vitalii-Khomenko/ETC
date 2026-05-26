@@ -27,6 +27,7 @@ Do not add Russian or any other non-English text to project files.
 - Keep machine range numbering deterministic: group equipment by the open `BUILDING` machine and nearest open `CIRCUIT` section, then apply each enabled section group independently.
 - Keep the machine diagram view synchronized with the current loaded content and replacement safety filters.
 - Keep split section ranges deterministic: fixed `Count` values consume that many matching tags in file order, and a blank `Count` consumes the remaining tags in that section.
+- Keep numeric entry controls as plain digit text inputs with numeric keyboard hints, avoiding browser spinner controls.
 - Keep replacement start/range fields empty by default; keep the number step default at `1`.
 - Start from the first matching `A` by default; use dbno only when the explicit filter is enabled.
 - Update project documentation after each functional change.

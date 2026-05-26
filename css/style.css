@@ -94,8 +94,7 @@ label {
     user-select: none;
 }
 
-input[type="text"],
-input[type="number"] {
+input[type="text"] {
     width: 100%;
     min-height: 48px;
     padding: 11px 12px;
@@ -462,12 +461,11 @@ th {
 }
 
 .machine-table {
-    min-width: 1080px;
+    min-width: 0;
     margin-bottom: 14px;
 }
 
-.machine-table input[type="text"],
-.machine-table input[type="number"] {
+.machine-table input[type="text"] {
     min-height: 40px;
     padding: 8px 9px;
     font-size: 15px;
@@ -481,11 +479,81 @@ th {
     font-weight: 700;
 }
 
+.machine-section-row td {
+    border-bottom: 0;
+    background: #fbfcfb;
+}
+
+.machine-section-row + .machine-groups-row td {
+    padding-top: 0;
+}
+
 .machine-meta {
     display: block;
     color: var(--muted);
     font-size: 0.8rem;
     font-weight: 500;
+}
+
+.range-group-count {
+    max-width: 86px;
+}
+
+.range-groups {
+    display: grid;
+    gap: 7px;
+    max-width: 100%;
+}
+
+.range-group {
+    display: grid;
+    grid-template-columns: 42px minmax(70px, 0.75fr) minmax(116px, 1.2fr) minmax(70px, 0.7fr) minmax(100px, 1fr);
+    gap: 6px;
+    align-items: end;
+    padding: 8px;
+    border: 1px solid #dfe7e4;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.range-group label {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.range-group input[type="text"] {
+    min-height: 38px;
+    padding: 7px 8px;
+    font-size: 15px;
+}
+
+.range-use {
+    display: flex;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+}
+
+.range-use input[type="checkbox"] {
+    margin: 0;
+}
+
+.range-field {
+    min-width: 0;
+}
+
+.range-preview {
+    min-height: 38px;
+    padding: 8px;
+    border: 1px solid #edf0ef;
+    border-radius: 8px;
+    background: #f8faf9;
+    color: #45514d;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.76rem;
+    overflow-wrap: anywhere;
 }
 
 .status-ok {
@@ -537,6 +605,16 @@ th {
 
     .download-links {
         grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 620px) {
+    .range-group {
+        grid-template-columns: 38px minmax(58px, 0.7fr) minmax(92px, 1fr) minmax(58px, 0.65fr);
+    }
+
+    .range-field.range-preview-field {
+        grid-column: 2 / -1;
     }
 }
 

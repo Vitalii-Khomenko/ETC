@@ -33,14 +33,14 @@
                 </div>
                 <div class="form-group">
                     <label for="numberStep">Number step</label>
-                    <input type="number" id="numberStep" value="1" min="1" inputmode="numeric">
+                    <input type="text" id="numberStep" value="1" inputmode="numeric" autocomplete="off" spellcheck="false">
                 </div>
             </div>
 
             <div class="grid-2">
                 <div class="form-group">
                     <label for="quantity">Quantity</label>
-                    <input type="number" id="quantity" min="1" inputmode="numeric">
+                    <input type="text" id="quantity" inputmode="numeric" autocomplete="off" spellcheck="false">
                 </div>
                 <div class="form-group">
                     <label for="suffix">File suffix</label>
@@ -57,7 +57,7 @@
                 </div>
                 <div class="form-group" id="startDbnoGroup">
                     <label for="startDbno">Start dbno</label>
-                    <input type="number" id="startDbno" min="0" inputmode="numeric">
+                    <input type="text" id="startDbno" inputmode="numeric" autocomplete="off" spellcheck="false">
                 </div>
             </div>
 
@@ -86,18 +86,13 @@
                     <table class="machine-table">
                         <thead>
                             <tr>
-                                <th>Use</th>
                                 <th>Machine / section</th>
                                 <th>Matches</th>
                                 <th>Groups</th>
-                                <th>Count</th>
-                                <th>Start number</th>
-                                <th>Step</th>
-                                <th>Range</th>
                             </tr>
                         </thead>
                         <tbody id="machineBody">
-                            <tr><td colspan="8">No machine data.</td></tr>
+                            <tr><td colspan="3">No machine data.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -133,7 +128,7 @@
                         <thead>
                             <tr>
                                 <th>dbno</th>
-                                <th>machine</th>
+                                <th>machine / section</th>
                                 <th>id</th>
                                 <th>txt</th>
                                 <th>new</th>
