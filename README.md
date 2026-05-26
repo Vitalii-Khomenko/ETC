@@ -65,14 +65,12 @@ numbered by that subgroup. A blank `Count` means "all remaining tags in this
 section". For example, a section with 40 matches can use three groups: count
 `5`, count `15`, and a blank final count for the remaining 20.
 
-The section range editor is grouped by machine and shows only machines with
-replacement matches. Each matching machine block lists its sections, `Groups`
-is entered on the section header, and the group `Count`, `Start`, `Step`, and
-preview fields appear directly below that section. Sections without replacement
-matches inside a matching machine remain visible for orientation, but their
-numbering fields are disabled. Match counts are highlighted for faster scanning.
-Digit fields use plain text inputs with numeric keyboard hints instead of
-browser spinner controls.
+The section range editor is grouped by machine and shows only machines and
+sections with replacement matches. Each matching section has `Groups` on the
+section header, and the group `Count`, `Start`, `Step`, and preview fields
+appear directly below that section. Match counts are highlighted for faster
+scanning. Digit fields use plain text inputs with numeric keyboard hints instead
+of browser spinner controls.
 
 Machine and section titles suppress duplicate `id`/`txt` names, including
 minor one-character spelling differences, so a section header does not repeat

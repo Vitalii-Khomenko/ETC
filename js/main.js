@@ -632,7 +632,7 @@ function renderMachineRanges(options = {}) {
         onlyMesspunkt: byId("onlyMesspunkt").checked
     });
     const visibleMachines = diagramData.machines.filter(group => group.candidateCount > 0);
-    const sectionCount = visibleMachines.reduce((sum, group) => sum + group.sections.filter(section => section.equipment.length > 0).length, 0);
+    const sectionCount = visibleMachines.reduce((sum, group) => sum + group.sections.filter(section => section.candidateCount > 0).length, 0);
     summaryEl.textContent = `Machines with matches: ${visibleMachines.length} | Sections shown: ${sectionCount} | Matches to replace: ${diagramData.totals.candidates}`;
 
     if (visibleMachines.length === 0) {
@@ -653,7 +653,8 @@ function renderMachineRanges(options = {}) {
 
     for (const group of visibleMachines) {
         const machine = group.machine;
-        const visibleSections = group.sections.filter(section => section.equipment.length > 0);
+        const visibleSections = group.sections.filter(section => section.candidateCount > 0);
+        const visibleEquipmentCount = visibleSections.reduce((sum, section) => sum + section.equipment.length, 0);
         const machineReplacedCount = visibleSections.reduce((sum, section) => (
             sum + section.equipment.filter(equipment => wasEquipmentReplaced(replacementLookup, section.section.key, equipment)).length
         ), 0);
@@ -674,7 +675,7 @@ function renderMachineRanges(options = {}) {
         if (meta.textContent) titleWrap.appendChild(meta);
         const machineStats = document.createElement("div");
         machineStats.className = "machine-range-stats";
-        appendCountStats(machineStats, group.equipment.length, group.candidateCount, machineReplacedCount);
+        appendCountStats(machineStats, visibleEquipmentCount, group.candidateCount, machineReplacedCount);
         machineHeader.appendChild(titleWrap);
         machineHeader.appendChild(machineStats);
         machineBlock.appendChild(machineHeader);
