@@ -45,6 +45,7 @@ def run_ui_defaults_case() -> dict:
     result["machineRangeEditorUsesBlocks"] = 'id="machineBody" class="machine-range-list"' in html and "machine-range-machine" in main_js
     result["machineRangeEditorFiltersMatchedMachines"] = "filter(group => group.candidateCount > 0)" in main_js and "Machines with matches:" in main_js
     result["matchCountHighlightExists"] = "function appendCountStats" in main_js and ".stat-match" in css
+    result["matchCountHighlightRequiresPositiveCount"] = 'className: matchCount > 0 ? "stat-match" : ""' in main_js
     result["groupCountRendersBelowSection"] = "function createRangeGroupElement" in main_js and "machine-groups-row" in main_js
     result["groupCountReadBeforeRerender"] = existing_pos < clear_pos
     result["runFlushesGroupEdits"] = "function getFreshSettingsForRun" in main_js and "renderMachineRangesNow();" in main_js
@@ -616,6 +617,7 @@ def main() -> None:
     assert_true(ui_defaults["machineRangeEditorUsesBlocks"], "machine range editor should use grouped machine and section blocks")
     assert_true(ui_defaults["machineRangeEditorFiltersMatchedMachines"], "machine range editor should show only machines with replacement matches")
     assert_true(ui_defaults["matchCountHighlightExists"], "match counts should have a dedicated highlight style")
+    assert_true(ui_defaults["matchCountHighlightRequiresPositiveCount"], "zero match counts should not use the highlight style")
     assert_true(ui_defaults["groupCountRendersBelowSection"], "group count should render compact group fields below each section")
     assert_true(ui_defaults["groupCountReadBeforeRerender"], "group count should be read before rerendering clears the table")
     assert_true(ui_defaults["runFlushesGroupEdits"], "preview and replace should apply pending group count edits before reading settings")

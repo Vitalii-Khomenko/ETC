@@ -217,7 +217,7 @@ function appendCountStats(container, shownCount, matchCount, replacedCount) {
     container.textContent = "";
     [
         { text: `${shownCount} shown` },
-        { text: `${matchCount} match`, className: "stat-match" },
+        { text: `${matchCount} match`, className: matchCount > 0 ? "stat-match" : "" },
         { text: `${replacedCount} replaced` }
     ].forEach((part, index) => {
         if (index > 0) container.appendChild(document.createTextNode(" | "));
