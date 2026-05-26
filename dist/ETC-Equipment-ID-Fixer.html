@@ -2202,7 +2202,7 @@ function renderMachineDiagram() {
 
     const data = getMachineDiagramData(currentContent, {
         onlyA: byId("onlyA").checked,
-        onlyMesspunkt: byId("onlyMesspunkt").checked
+        onlyMesspunkt: false
     });
     const sectionCount = data.machines.reduce((sum, group) => sum + group.sections.filter(section => section.equipment.length > 0).length, 0);
     const replacementLookup = getAppliedReplacementLookup();

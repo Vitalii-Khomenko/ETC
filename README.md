@@ -85,8 +85,10 @@ The `Machine Diagram` tab shows the same grouping visually. Each machine is a
 compact block with its `CIRCUIT` sections inside it, and each shown equipment
 item is a chip with its `dbno` and `id`/`txt` value. `A`/`a` placeholders are
 highlighted so the operator can see which measurements belong to which machine
-and section before replacement. Machine and section lists can be collapsed or
-expanded. Section collapse hides the equipment chips inside that section.
+and section before replacement. The diagram always shows the full equipment
+type list, so toggling `Only type = Messpunkt` does not change the Review view.
+Machine and section lists can be collapsed or expanded. Section collapse hides
+the equipment chips inside that section.
 Lists with replacement matches, or numbers changed by the last
 `Replace` action, open by default; lists without matches stay collapsed by
 default to save space. After `Replace`, newly written numbers are highlighted

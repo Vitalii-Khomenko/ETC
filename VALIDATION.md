@@ -35,7 +35,7 @@ python scripts/run_privacy_gate.py
 | Duplicate title suppression | Nearly duplicate machine or section `id`/`txt` title parts are shown once before the `dbno`. |
 | Group count persistence | The current `Groups` value is read before the section editor is redrawn, so entering `2` adds a second group row instead of resetting to `1`. |
 | Layout modes | The top `Phone` / `Laptop` switch changes between the smartphone field layout and a wider single-column laptop layout. |
-| Machine diagram | The diagram data groups shown equipment by machine and CIRCUIT section and displays one-sided placeholder values such as `A / 3313616`. |
+| Machine diagram | The diagram data groups shown equipment by machine and CIRCUIT section, always shows the full equipment type list, and displays one-sided placeholder values such as `A / 3313616`. |
 | Diagram disclosure | Machine and section lists render as collapsible disclosures; inactive lists are collapsed by default and hidden section equipment flows override flex display. |
 | Replaced-number highlight | Numbers changed by the last replacement plan are highlighted in green in the machine diagram. |
 | Safety filter | Existing numeric IDs are not overwritten while `Only replace id/txt with A/a` is enabled and neither attribute is `A`/`a`. |

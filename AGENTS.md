@@ -26,7 +26,7 @@ Do not add Russian or any other non-English text to project files.
 - Keep numbering deterministic: start at the selected number and increment by the selected number step for each accepted replacement.
 - Keep machine range numbering deterministic: group equipment by the open `BUILDING` machine and nearest open `CIRCUIT` section, then apply each enabled section group independently.
 - Keep the top `Phone` / `Laptop` layout switch available for smartphone and desktop browser use.
-- Keep the machine diagram view synchronized with the current loaded content and replacement safety filters.
+- Keep the machine diagram view synchronized with the current loaded content while always showing the full equipment type list, regardless of the `Only type = Messpunkt` replacement filter.
 - Keep machine diagram lists collapsible; groups with matches or just-replaced values should open by default, while inactive groups should stay collapsed.
 - Ensure collapsed section lists hide their equipment chips even when the chip flow uses flex layout.
 - Keep split section ranges deterministic: fixed `Count` values consume that many matching tags in file order, and a blank `Count` consumes the remaining tags in that section.

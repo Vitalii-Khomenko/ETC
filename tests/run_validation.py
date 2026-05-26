@@ -73,6 +73,7 @@ def run_diagram_ui_case() -> dict:
     main_js = (ROOT / "js" / "main.js").read_text(encoding="utf-8")
     return {
         "hasDisclosureButtons": "function createToggleButton" in main_js and "aria-expanded" in main_js,
+        "alwaysShowsAllTypes": "function renderMachineDiagram" in main_js and "onlyMesspunkt: false" in main_js,
         "defaultsUseActivity": "machineHasActivity" in main_js and "sectionHasActivity" in main_js,
         "tracksExpansionState": "diagramExpansionState" in main_js and "applyDisclosureState" in main_js,
         "sectionDisclosureTargetsFlow": "applyDisclosureState(sectionHeader, flow, sectionStorageKey, nextExpanded)" in main_js,
@@ -634,6 +635,7 @@ def main() -> None:
 
     diagram_ui = run_diagram_ui_case()
     assert_true(diagram_ui["hasDisclosureButtons"], "machine diagram should render collapsible disclosure buttons")
+    assert_true(diagram_ui["alwaysShowsAllTypes"], "machine diagram should always show the full type list")
     assert_true(diagram_ui["defaultsUseActivity"], "machine diagram collapsed defaults should depend on matches or replacements")
     assert_true(diagram_ui["tracksExpansionState"], "machine diagram should keep manual expansion state while rerendering")
     assert_true(diagram_ui["sectionDisclosureTargetsFlow"], "section disclosure should target the section equipment flow")
