@@ -213,6 +213,21 @@ function createToggleButton(className, expanded, controlsId) {
     return button;
 }
 
+function appendCountStats(container, shownCount, matchCount, replacedCount) {
+    container.textContent = "";
+    [
+        { text: `${shownCount} shown` },
+        { text: `${matchCount} match`, className: "stat-match" },
+        { text: `${replacedCount} replaced` }
+    ].forEach((part, index) => {
+        if (index > 0) container.appendChild(document.createTextNode(" | "));
+        const span = document.createElement("span");
+        span.textContent = part.text;
+        if (part.className) span.className = part.className;
+        container.appendChild(span);
+    });
+}
+
 function applyDisclosureState(button, body, storageKey, expanded) {
     button.setAttribute("aria-expanded", String(expanded));
     body.hidden = !expanded;
@@ -276,7 +291,7 @@ function renderMachineDiagram() {
 
         const counts = document.createElement("div");
         counts.className = "machine-counts";
-        counts.textContent = `${group.equipment.length} shown | ${group.candidateCount} match | ${machineReplacedCount} replaced`;
+        appendCountStats(counts, group.equipment.length, group.candidateCount, machineReplacedCount);
 
         header.appendChild(titleWrap);
         header.appendChild(counts);
@@ -315,7 +330,7 @@ function renderMachineDiagram() {
                 sectionTitle.textContent = getSectionTitle(section.section);
                 const sectionCounts = document.createElement("div");
                 sectionCounts.className = "section-counts";
-                sectionCounts.textContent = `${section.equipment.length} shown | ${section.candidateCount} match | ${sectionReplacedCount} replaced`;
+                appendCountStats(sectionCounts, section.equipment.length, section.candidateCount, sectionReplacedCount);
                 sectionHeader.appendChild(sectionTitle);
                 sectionHeader.appendChild(sectionCounts);
                 sectionBlock.appendChild(sectionHeader);
@@ -659,7 +674,7 @@ function renderMachineRanges(options = {}) {
         if (meta.textContent) titleWrap.appendChild(meta);
         const machineStats = document.createElement("div");
         machineStats.className = "machine-range-stats";
-        machineStats.textContent = `${group.equipment.length} shown | ${group.candidateCount} match | ${machineReplacedCount} replaced`;
+        appendCountStats(machineStats, group.equipment.length, group.candidateCount, machineReplacedCount);
         machineHeader.appendChild(titleWrap);
         machineHeader.appendChild(machineStats);
         machineBlock.appendChild(machineHeader);
@@ -702,7 +717,7 @@ function renderMachineRanges(options = {}) {
             sectionName.textContent = getSectionTitle(section);
             const sectionStats = document.createElement("div");
             sectionStats.className = "range-section-stats";
-            sectionStats.textContent = `${sectionGroup.equipment.length} shown | ${count} match | ${sectionReplacedCount} replaced`;
+            appendCountStats(sectionStats, sectionGroup.equipment.length, count, sectionReplacedCount);
             sectionInfo.appendChild(sectionName);
             sectionInfo.appendChild(sectionStats);
 

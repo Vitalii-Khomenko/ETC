@@ -31,6 +31,8 @@ python scripts/run_privacy_gate.py
 | Machine ranges | The replacement editor shows only machines with matching `A`/`a` equipment, and enabled machine sections use independent start numbers and number steps while preserving file order inside each section. |
 | Split section ranges | A section can be split into multiple numbering groups with fixed counts and a blank final count for remaining matches. |
 | Compact group editor | Group counts are entered on each machine section block, and group fields render below the section without browser spinner controls. |
+| Match count highlight | Machine and section match counts have a dedicated highlight style for scanning. |
+| Duplicate title suppression | Nearly duplicate machine or section `id`/`txt` title parts are shown once before the `dbno`. |
 | Group count persistence | The current `Groups` value is read before the section editor is redrawn, so entering `2` adds a second group row instead of resetting to `1`. |
 | Layout modes | The top `Phone` / `Laptop` switch changes between the smartphone field layout and a wider single-column laptop layout. |
 | Machine diagram | The diagram data groups shown equipment by machine and CIRCUIT section and displays one-sided placeholder values such as `A / 3313616`. |

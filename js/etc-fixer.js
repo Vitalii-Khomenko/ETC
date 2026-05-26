@@ -113,7 +113,7 @@ function getMachineTitle(machine) {
     if (!machine) return "Unassigned";
     const parts = [];
     if (machine.id) parts.push(machine.id);
-    if (machine.txt && machine.txt !== machine.id) parts.push(machine.txt);
+    if (machine.txt && !isDuplicateTitlePart(machine.id, machine.txt)) parts.push(machine.txt);
     if (machine.dbno) parts.push(`dbno ${machine.dbno}`);
     return parts.length > 0 ? parts.join(" | ") : "Unnamed BUILDING";
 }
@@ -122,9 +122,47 @@ function getSectionTitle(section) {
     if (!section) return "No CIRCUIT";
     const parts = [];
     if (section.id) parts.push(section.id);
-    if (section.txt && section.txt !== section.id) parts.push(section.txt);
+    if (section.txt && !isDuplicateTitlePart(section.id, section.txt)) parts.push(section.txt);
     if (section.dbno) parts.push(`dbno ${section.dbno}`);
     return parts.length > 0 ? parts.join(" | ") : "Unnamed CIRCUIT";
+}
+
+function normalizeTitlePart(value) {
+    return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function hasSingleCharacterDifference(left, right) {
+    if (Math.abs(left.length - right.length) > 1) return false;
+    let mismatches = 0;
+    let leftIndex = 0;
+    let rightIndex = 0;
+    while (leftIndex < left.length && rightIndex < right.length) {
+        if (left[leftIndex] === right[rightIndex]) {
+            leftIndex++;
+            rightIndex++;
+            continue;
+        }
+        mismatches++;
+        if (mismatches > 1) return false;
+        if (left.length > right.length) {
+            leftIndex++;
+        } else if (right.length > left.length) {
+            rightIndex++;
+        } else {
+            leftIndex++;
+            rightIndex++;
+        }
+    }
+    return true;
+}
+
+function isDuplicateTitlePart(left, right) {
+    const normalizedLeft = normalizeTitlePart(left);
+    const normalizedRight = normalizeTitlePart(right);
+    if (!normalizedLeft || !normalizedRight) return false;
+    if (normalizedLeft === normalizedRight) return true;
+    if (Math.min(normalizedLeft.length, normalizedRight.length) < 6) return false;
+    return hasSingleCharacterDifference(normalizedLeft, normalizedRight);
 }
 
 function getMachineSectionTitle(machine, section) {

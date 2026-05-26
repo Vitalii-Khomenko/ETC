@@ -70,8 +70,13 @@ replacement matches. Each matching machine block lists its sections, `Groups`
 is entered on the section header, and the group `Count`, `Start`, `Step`, and
 preview fields appear directly below that section. Sections without replacement
 matches inside a matching machine remain visible for orientation, but their
-numbering fields are disabled. Digit fields use plain text inputs with numeric
-keyboard hints instead of browser spinner controls.
+numbering fields are disabled. Match counts are highlighted for faster scanning.
+Digit fields use plain text inputs with numeric keyboard hints instead of
+browser spinner controls.
+
+Machine and section titles suppress duplicate `id`/`txt` names, including
+minor one-character spelling differences, so a section header does not repeat
+nearly identical names before the `dbno`.
 
 The top layout switch provides `Phone` and `Laptop` modes. Phone mode keeps the
 single-column field layout for smartphone use. Laptop mode keeps the same
