@@ -40,7 +40,7 @@ Project Development and Publishing Guidelines for ETC Equipment ID Fixer
    - Do not partially rewrite tags that lack either `id` or `txt`.
 
 ## 4. Documentation Standards
-   - README.md, AGENTS.md, rules.txt, and VALIDATION.md must be in English.
+   - README.md, TECHNICAL.md, AGENTS.md, rules.txt, and VALIDATION.md must be in English.
    - Document supported formats and safety behavior.
    - Update documentation when replacement behavior changes.
 
@@ -74,6 +74,7 @@ Project Development and Publishing Guidelines for ETC Equipment ID Fixer
    AGENTS.md                        # Agent instructions
    rules.txt                        # Development and publishing rules
    LICENSE                          # MIT license
+   TECHNICAL.md                     # Technical behavior and implementation notes
    VALIDATION.md                    # Validation notes
    SECURITY.md                      # Security and privacy notes
    ```

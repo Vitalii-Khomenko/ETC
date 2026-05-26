@@ -3,6 +3,8 @@
 Mobile-friendly HTML/JavaScript utility for `.etc` files. It updates `id` and
 `txt` in opening `ELECTRICALEQUIPMENT` tags.
 
+For implementation details, see `TECHNICAL.md`.
+
 Main replacement example:
 
 ```xml
@@ -101,6 +103,9 @@ green in the diagram.
 - `js/etc-fixer.js` - search and replacement engine.
 - `scripts/run_privacy_gate.py` - publish-time privacy and static security gate.
 - `tests/run_validation.py` - regression validation for logic and build output.
+- `TECHNICAL.md` - detailed behavior and implementation notes.
+- `AUDIT.md` - security, privacy, and correctness audit notes.
+- `SECURITY.md` - user-facing security and privacy policy.
 
 ## Workflow
 

@@ -1,6 +1,6 @@
 # ETC Equipment ID Fixer Audit
 
-Audit date: 2026-05-25
+Audit date: 2026-05-26
 
 ## Executive Summary
 
@@ -35,6 +35,7 @@ Audited project areas:
 - `scripts/create_template_from_3.py`
 - `tests/run_validation.py`
 - `README.md`
+- `TECHNICAL.md`
 - `SECURITY.md`
 - `VALIDATION.md`
 - `AGENTS.md`
@@ -52,9 +53,10 @@ The project is intentionally simple and local-first:
 - The split app is maintained through `index.html`, `css/`, and `js/`.
 - The mobile field build is generated into `dist/ETC-Equipment-ID-Fixer.html`.
 - `js/etc-fixer.js` contains the parsing, grouping, replacement, and export log
-  logic.
+  logic, including duplicate title suppression.
 - `js/main.js` owns browser UI state, rendering, button handlers, previews, and
-  downloads.
+  downloads, including phone/laptop layout switching and diagram disclosure
+  state.
 - `js/utils.js` owns file-size limits, supported extension checks, filename
   sanitization, file reading, downloads, and UI logging.
 - Validation is run through `python tests/run_validation.py`, which exercises
@@ -71,8 +73,8 @@ Primary data flow:
 1. The user selects a local `.etc`, `.xml`, or `.txt` file.
 2. The browser reads the file with `FileReader`.
 3. The app scans opening `BUILDING` and `ELECTRICALEQUIPMENT` tags.
-4. The UI shows machine summaries, machine ranges, a machine diagram, and a
-   preview table.
+4. The UI shows file summaries, a matched-machine replacement editor, a full
+   machine diagram, and a preview table.
 5. Replacement changes are applied in memory.
 6. The browser downloads the modified ETC file and a text export log.
 
@@ -92,7 +94,12 @@ Current expected behavior:
 - `Only type = Messpunkt` is enabled by default.
 - Machine range mode is enabled by default.
 - Machine range mode groups equipment by the currently open `BUILDING` block.
-- Each enabled machine range has its own start number and number step.
+- Open `CIRCUIT` blocks are detected as sections inside each machine.
+- Each enabled section group has its own start number and number step.
+- The replacement editor shows only machines and sections with current
+  replacement matches.
+- The replacement editor highlights positive match counts while leaving
+  `0 match` values unhighlighted.
 - The operator UI keeps global range controls hidden so section group ranges are
   configured manually.
 - The legacy dbno start filter remains disabled in the operator UI.
@@ -102,14 +109,22 @@ by the selected step in file order within the relevant range.
 
 ## Machine Grouping And Diagram Review
 
-The machine scanner tracks the current open `BUILDING` stack and assigns each
-`ELECTRICALEQUIPMENT` tag to the active machine. Equipment outside a `BUILDING`
-is placed into an explicit `Unassigned` group.
+The machine scanner tracks the current open `BUILDING` stack and nearest open
+`CIRCUIT` section, then assigns each `ELECTRICALEQUIPMENT` tag to that machine
+and section. Equipment outside a `BUILDING` is placed into an explicit
+`Unassigned` group.
 
 The machine diagram is a useful safety view because it lets an operator inspect
 which measurement IDs belong to which machine before replacement. It is also
 implemented safely from an injection perspective: values are assigned through
 `textContent`, not HTML injection.
+
+The Review diagram intentionally always shows the full equipment type list.
+The `Only type = Messpunkt` checkbox affects replacement eligibility in
+`2. Replacement`, but it does not shrink the overview in `3. Review`.
+
+Machine and section titles suppress repeated or nearly repeated `id`/`txt`
+values before the `dbno`, reducing visual noise in section headers.
 
 Operational caution: the diagram can show private machine IDs, machine names,
 `dbno` values, and equipment IDs. Screenshots of the diagram should be treated
@@ -204,8 +219,15 @@ The validation suite currently covers:
 - output suffix safety,
 - export log content and filename,
 - machine detection,
-- independent machine ranges,
-- machine diagram grouping,
+- `CIRCUIT` section detection,
+- independent section ranges,
+- replacement editor filtering by matched machines and sections,
+- phone/laptop layout mode checks,
+- machine diagram grouping with the full equipment type list,
+- duplicate title suppression,
+- positive-only match count highlighting,
+- collapsible diagram behavior,
+- green replaced-value highlighting,
 - oversized machine range rejection,
 - local template processing when the local sample exists,
 - local machine diagram validation when the local sample exists,

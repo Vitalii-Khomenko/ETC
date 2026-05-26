@@ -4,6 +4,9 @@ The current test suite is a regression suite for the live browser
 implementation. It exercises the replacement engine with Node and verifies that
 the generated mobile HTML stays self-contained.
 
+The broader behavior and implementation contract is documented in
+`TECHNICAL.md`.
+
 Run validation with:
 
 ```bash

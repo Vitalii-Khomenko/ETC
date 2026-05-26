@@ -34,6 +34,7 @@ Do not add Russian or any other non-English text to project files.
 - Keep legacy global replacement fields hidden in the operator UI; keep section start fields empty and section number step defaulted to `1`.
 - Start from the first matching `A` by default; use dbno only when the explicit filter is enabled.
 - Update project documentation after each functional change.
+- Keep `TECHNICAL.md` aligned with replacement, grouping, UI, export, privacy, and validation behavior.
 - Run `python tests/run_validation.py` after every functional update.
 - Keep `scripts/run_privacy_gate.py` passing before publishing changes.
 - After each completed task, commit and push the intended project changes to GitHub unless the user explicitly asks not to publish.

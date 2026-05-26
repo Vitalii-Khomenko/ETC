@@ -29,7 +29,8 @@ treat them like ETC-derived data and keep them local unless reviewed.
 The machine diagram is also rendered from the loaded ETC content and can expose
 machine IDs, machine names, CIRCUIT section IDs, section names, `dbno` values,
 and equipment IDs on screen. Treat screenshots of the diagram like ETC-derived
-data.
+data. The Review diagram always shows the full equipment type list; replacement
+filters such as `Only type = Messpunkt` do not hide equipment from that overview.
 
 ## Supported Deployment
 
@@ -69,6 +70,10 @@ For the single-file build, `script-src` and `style-src` require
 - Replacement start/range fields are empty by default, so the operator must
   intentionally enter replacement ranges before previewing or replacing.
 - The number step defaults to `1` and is strictly validated and capped.
+- The replacement editor shows only machines and sections that currently have
+  replacement matches.
+- The Review diagram is intentionally a full overview and is not narrowed by
+  the `Only type = Messpunkt` replacement filter.
 - Numeric fields use strict whole-number validation, so mixed input such as
   `6abc` is rejected.
 - Range mode is capped to protect mobile browsers from accidental oversized
