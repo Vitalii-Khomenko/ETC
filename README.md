@@ -70,12 +70,18 @@ the group `Count`, `Start`, `Step`, and preview fields appear below that row.
 Digit fields use plain text inputs with numeric keyboard hints instead of
 browser spinner controls.
 
+The top layout switch provides `Phone` and `Laptop` modes. Phone mode keeps the
+single-column field layout for smartphone use. Laptop mode uses a wider
+two-column workspace on larger screens, with file and replacement controls on
+the left and review content on the right.
+
 The `Machine Diagram` tab shows the same grouping visually. Each machine is a
 compact block with its `CIRCUIT` sections inside it, and each shown equipment
 item is a chip with its `dbno` and `id`/`txt` value. `A`/`a` placeholders are
 highlighted so the operator can see which measurements belong to which machine
 and section before replacement. Machine and section lists can be collapsed or
-expanded. Lists with replacement matches, or numbers changed by the last
+expanded. Section collapse hides the equipment chips inside that section.
+Lists with replacement matches, or numbers changed by the last
 `Replace` action, open by default; lists without matches stay collapsed by
 default to save space. After `Replace`, newly written numbers are highlighted
 green in the diagram.

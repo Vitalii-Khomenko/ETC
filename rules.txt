@@ -9,6 +9,7 @@ Project Development and Publishing Guidelines for ETC Equipment ID Fixer
 
 ## 2. Interface Requirements
    - Keep the UI touch-friendly for smartphone field usage.
+   - Keep the top `Phone` / `Laptop` layout switch available for field and desktop browser use.
    - Preserve readable labels, validation messages, and logging.
    - Test mobile browser usability after layout changes.
    - Keep all user-facing text in English.
@@ -28,6 +29,7 @@ Project Development and Publishing Guidelines for ETC Equipment ID Fixer
    - Keep equipment outside a `BUILDING` under an explicit unassigned group.
    - Keep the machine diagram grouped by `BUILDING` and `CIRCUIT` and synchronized with the current safety filters.
    - Keep machine diagram lists collapsible; groups with matches or just-replaced values should open by default, while inactive groups should stay collapsed.
+   - Ensure collapsed section lists hide their equipment chips even when the chip flow uses flex layout.
    - Keep legacy global replacement fields hidden in the operator UI; keep section start fields empty and section number step defaulted to `1`.
    - Preserve source file formatting outside the edited attributes.
    - Keep the placeholder safety default enabled: only tags where `id` or `txt` is `A`/`a` are changed.

@@ -14,6 +14,18 @@ function byId(id) {
     return document.getElementById(id);
 }
 
+function setLayoutMode(mode) {
+    const normalizedMode = mode === "laptop" ? "laptop" : "phone";
+    document.body.dataset.layoutMode = normalizedMode;
+    document.querySelectorAll('input[name="layoutMode"]').forEach(input => {
+        input.checked = input.value === normalizedMode;
+    });
+}
+
+function getDefaultLayoutMode() {
+    return window.matchMedia("(min-width: 900px)").matches ? "laptop" : "phone";
+}
+
 function currentMode() {
     return byId("useMachineRanges").checked ? "machine" : "batch";
 }
@@ -844,6 +856,9 @@ document.addEventListener("DOMContentLoaded", () => {
     byId("downloadBtn").addEventListener("click", downloadCurrentFile);
     byId("diagramTab").addEventListener("click", () => setReviewTab("diagramPanel"));
     byId("previewTab").addEventListener("click", () => setReviewTab("previewPanel"));
+    document.querySelectorAll('input[name="layoutMode"]').forEach(input => {
+        input.addEventListener("change", () => setLayoutMode(input.value));
+    });
     byId("onlyA").addEventListener("change", refreshGroupedViews);
     byId("onlyMesspunkt").addEventListener("change", () => {
         refreshGroupedViews();
@@ -854,6 +869,7 @@ document.addEventListener("DOMContentLoaded", () => {
     byId("useDbnoStart").addEventListener("change", updateModeUi);
     byId("useMachineRanges").addEventListener("change", updateModeUi);
     window.addEventListener("pagehide", clearDownloadLinks);
+    setLayoutMode(getDefaultLayoutMode());
     updateModeUi();
     renderMachineRanges();
     renderMachineDiagram();

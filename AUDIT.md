@@ -115,6 +115,9 @@ Operational caution: the diagram can show private machine IDs, machine names,
 `dbno` values, and equipment IDs. Screenshots of the diagram should be treated
 like ETC-derived data.
 
+The `Phone` / `Laptop` layout switch is local-only UI state. It does not write
+browser storage and does not transmit file or machine data.
+
 ## Security And Privacy Review
 
 Positive findings:

@@ -7,11 +7,21 @@
     <title>ETC Equipment ID Fixer</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body data-layout-mode="phone">
     <main class="container">
         <header>
             <h1>ETC Equipment ID Fixer</h1>
             <p>ELECTRICALEQUIPMENT id/txt</p>
+            <div class="layout-toggle segmented" role="radiogroup" aria-label="Layout mode">
+                <label>
+                    <input type="radio" name="layoutMode" value="phone" checked>
+                    <span>Phone</span>
+                </label>
+                <label>
+                    <input type="radio" name="layoutMode" value="laptop">
+                    <span>Laptop</span>
+                </label>
+            </div>
         </header>
 
         <section class="card">

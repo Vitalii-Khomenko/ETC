@@ -36,6 +36,14 @@ body {
     touch-action: manipulation;
 }
 
+body[data-layout-mode="phone"] {
+    --mode-card-padding: 16px;
+}
+
+body[data-layout-mode="laptop"] {
+    --mode-card-padding: 18px;
+}
+
 .container {
     max-width: 860px;
     margin: 0 auto;
@@ -66,7 +74,7 @@ header p {
 
 .card {
     margin-bottom: 14px;
-    padding: 16px;
+    padding: var(--mode-card-padding, 16px);
     background: var(--surface);
     border: 1px solid #e7ecea;
     border-radius: 8px;
@@ -152,6 +160,7 @@ input[type="radio"] {
 }
 
 .segmented label {
+    position: relative;
     margin: 0;
 }
 
@@ -176,6 +185,11 @@ input[type="radio"] {
     border-color: var(--primary);
     background: #e8f5f1;
     color: var(--primary-dark);
+}
+
+.layout-toggle {
+    max-width: 360px;
+    margin: 12px auto 0;
 }
 
 .switch-row {
@@ -662,7 +676,59 @@ th {
 .log-ok { color: #72d39f; font-weight: 700; }
 .log-warn { color: #ffd36a; font-weight: 700; }
 .log-error { color: #ff8a80; font-weight: 700; }
+[hidden] { display: none !important; }
 .hidden { display: none; }
+
+@media (min-width: 900px) {
+    body[data-layout-mode="laptop"] .container {
+        display: grid;
+        grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+        gap: 14px;
+        max-width: 1320px;
+    }
+
+    body[data-layout-mode="laptop"] header {
+        grid-column: 1 / -1;
+        margin-bottom: 2px;
+    }
+
+    body[data-layout-mode="laptop"] .card {
+        margin-bottom: 0;
+    }
+
+    body[data-layout-mode="laptop"] section.card:nth-of-type(1),
+    body[data-layout-mode="laptop"] section.card:nth-of-type(2) {
+        grid-column: 1;
+    }
+
+    body[data-layout-mode="laptop"] section.card:nth-of-type(3) {
+        grid-column: 2;
+        grid-row: 2 / span 2;
+    }
+
+    body[data-layout-mode="laptop"] section.card:nth-of-type(4) {
+        grid-column: 1 / -1;
+    }
+
+    body[data-layout-mode="laptop"] .action-row {
+        position: static;
+    }
+
+    body[data-layout-mode="laptop"] .diagram-grid {
+        max-height: 62dvh;
+        overflow-y: auto;
+        padding-right: 4px;
+        scrollbar-width: thin;
+    }
+
+    body[data-layout-mode="laptop"] .machine-table input[type="text"] {
+        min-height: 36px;
+    }
+
+    body[data-layout-mode="laptop"] #log {
+        height: 190px;
+    }
+}
 
 @media (min-width: 620px) {
     .grid-2 {
@@ -707,11 +773,21 @@ th {
 }
     </style>
 </head>
-<body>
+<body data-layout-mode="phone">
     <main class="container">
         <header>
             <h1>ETC Equipment ID Fixer</h1>
             <p>ELECTRICALEQUIPMENT id/txt</p>
+            <div class="layout-toggle segmented" role="radiogroup" aria-label="Layout mode">
+                <label>
+                    <input type="radio" name="layoutMode" value="phone" checked>
+                    <span>Phone</span>
+                </label>
+                <label>
+                    <input type="radio" name="layoutMode" value="laptop">
+                    <span>Laptop</span>
+                </label>
+            </div>
         </header>
 
         <section class="card">
@@ -1810,6 +1886,18 @@ function byId(id) {
     return document.getElementById(id);
 }
 
+function setLayoutMode(mode) {
+    const normalizedMode = mode === "laptop" ? "laptop" : "phone";
+    document.body.dataset.layoutMode = normalizedMode;
+    document.querySelectorAll('input[name="layoutMode"]').forEach(input => {
+        input.checked = input.value === normalizedMode;
+    });
+}
+
+function getDefaultLayoutMode() {
+    return window.matchMedia("(min-width: 900px)").matches ? "laptop" : "phone";
+}
+
 function currentMode() {
     return byId("useMachineRanges").checked ? "machine" : "batch";
 }
@@ -2640,6 +2728,9 @@ document.addEventListener("DOMContentLoaded", () => {
     byId("downloadBtn").addEventListener("click", downloadCurrentFile);
     byId("diagramTab").addEventListener("click", () => setReviewTab("diagramPanel"));
     byId("previewTab").addEventListener("click", () => setReviewTab("previewPanel"));
+    document.querySelectorAll('input[name="layoutMode"]').forEach(input => {
+        input.addEventListener("change", () => setLayoutMode(input.value));
+    });
     byId("onlyA").addEventListener("change", refreshGroupedViews);
     byId("onlyMesspunkt").addEventListener("change", () => {
         refreshGroupedViews();
@@ -2650,6 +2741,7 @@ document.addEventListener("DOMContentLoaded", () => {
     byId("useDbnoStart").addEventListener("change", updateModeUi);
     byId("useMachineRanges").addEventListener("change", updateModeUi);
     window.addEventListener("pagehide", clearDownloadLinks);
+    setLayoutMode(getDefaultLayoutMode());
     updateModeUi();
     renderMachineRanges();
     renderMachineDiagram();

@@ -15,6 +15,7 @@ TEMPLATE_PATH = ROOT / "templates" / "3-template-all-a.etc"
 
 def run_ui_defaults_case() -> dict:
     html = (ROOT / "index.html").read_text(encoding="utf-8")
+    css = (ROOT / "css" / "style.css").read_text(encoding="utf-8")
     main_js = (ROOT / "js" / "main.js").read_text(encoding="utf-8")
     empty_fields = ["startNumber", "quantity", "startDbno"]
     render_start = main_js.index("function renderMachineRanges")
@@ -31,6 +32,13 @@ def run_ui_defaults_case() -> dict:
     )
     result["manualMachineModeOnly"] = re.search(r'id="useMachineRanges"[^>]*class="hidden"[^>]*checked', html) is not None
     result["fillFromStartButtonRemoved"] = "fillMachineRangesBtn" not in html and "Fill From Start Number" not in html
+    result["layoutModeToggleExists"] = (
+        'name="layoutMode" value="phone"' in html and
+        'name="layoutMode" value="laptop"' in html and
+        'aria-label="Layout mode"' in html
+    )
+    result["layoutModeScriptExists"] = "function setLayoutMode" in main_js and "function getDefaultLayoutMode" in main_js
+    result["laptopLayoutCssExists"] = 'body[data-layout-mode="laptop"] .container' in css and "grid-template-columns" in css
     result["htmlHasNoNumberInputs"] = 'type="number"' not in html
     result["scriptCreatesNoNumberInputs"] = 'input.type = "number"' not in main_js
     result["machineRangeTableIsCompact"] = "<th>Count</th>" not in html and "<th>Start number</th>" not in html
@@ -62,6 +70,8 @@ def run_diagram_ui_case() -> dict:
         "hasDisclosureButtons": "function createToggleButton" in main_js and "aria-expanded" in main_js,
         "defaultsUseActivity": "machineHasActivity" in main_js and "sectionHasActivity" in main_js,
         "tracksExpansionState": "diagramExpansionState" in main_js and "applyDisclosureState" in main_js,
+        "sectionDisclosureTargetsFlow": "applyDisclosureState(sectionHeader, flow, sectionStorageKey, nextExpanded)" in main_js,
+        "hiddenAttributeOverridesFlex": "[hidden] { display: none !important; }" in css,
         "clearsExpansionAfterReplace": "lastAppliedPlan = result.plan" in main_js and "diagramExpansionState.clear();" in main_js,
         "hasReplacedLookup": "function getAppliedReplacementLookup" in main_js and "function wasEquipmentReplaced" in main_js,
         "hasGreenReplacedStyle": ".equipment-chip.replaced" in css and "#e6f7ec" in css
@@ -588,6 +598,9 @@ def main() -> None:
     assert_true(ui_defaults["globalControlsAreHidden"], "global replacement fields should stay hidden in the operator UI")
     assert_true(ui_defaults["manualMachineModeOnly"], "operator UI should stay in machine range mode")
     assert_true(ui_defaults["fillFromStartButtonRemoved"], "global fill button should be removed from the operator UI")
+    assert_true(ui_defaults["layoutModeToggleExists"], "phone and laptop layout mode controls should exist")
+    assert_true(ui_defaults["layoutModeScriptExists"], "layout mode controls should update the document layout mode")
+    assert_true(ui_defaults["laptopLayoutCssExists"], "laptop layout mode should provide a wider two-column layout")
     assert_true(ui_defaults["htmlHasNoNumberInputs"], "HTML numeric inputs should use text inputs with numeric keyboard hints")
     assert_true(ui_defaults["scriptCreatesNoNumberInputs"], "dynamic numeric inputs should not use browser spinner controls")
     assert_true(ui_defaults["machineRangeTableIsCompact"], "machine range table should keep group fields below the section row")
@@ -607,6 +620,8 @@ def main() -> None:
     assert_true(diagram_ui["hasDisclosureButtons"], "machine diagram should render collapsible disclosure buttons")
     assert_true(diagram_ui["defaultsUseActivity"], "machine diagram collapsed defaults should depend on matches or replacements")
     assert_true(diagram_ui["tracksExpansionState"], "machine diagram should keep manual expansion state while rerendering")
+    assert_true(diagram_ui["sectionDisclosureTargetsFlow"], "section disclosure should target the section equipment flow")
+    assert_true(diagram_ui["hiddenAttributeOverridesFlex"], "hidden section equipment flows should override flex display")
     assert_true(diagram_ui["clearsExpansionAfterReplace"], "machine diagram should reset expansion defaults after replacements")
     assert_true(diagram_ui["hasReplacedLookup"], "machine diagram should detect equipment changed by the last replacement plan")
     assert_true(diagram_ui["hasGreenReplacedStyle"], "machine diagram should style replaced equipment chips in green")
